@@ -85,7 +85,7 @@ namespace Rugal.LocalFiler.Extention
         }
         public static IServiceCollection AddLocalFileService(this IServiceCollection Services)
         {
-            Services.AddSingleton<LocalFileService>();
+            Services.AddSingleton<LocalFilerService>();
             return Services;
         }
 
