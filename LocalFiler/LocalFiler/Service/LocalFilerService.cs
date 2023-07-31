@@ -13,7 +13,7 @@ namespace Rugal.LocalFiler.Service
 
         #region Public Method
 
-        #region File Save
+        #region Transfer
         public virtual LocalFilerService TransferSave<TData>(IEnumerable<TData> Datas, Func<TData, byte[]> ExtractBuffer, Func<TData, object> GetFileName, Action<TData, string> SetFileNameFunc)
         {
             foreach (var Item in Datas)
@@ -25,6 +25,9 @@ namespace Rugal.LocalFiler.Service
             }
             return this;
         }
+        #endregion
+
+        #region File Save
         public virtual string SaveFile<TData>(object FileName, byte[] SaveBuffer, params object[] Paths)
            => LocalSave<TData>(FileName.ToString(), SaveBuffer, Paths);
         public virtual string SaveFile(object FileName, byte[] SaveBuffer, params object[] Paths)
