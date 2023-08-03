@@ -80,6 +80,7 @@ namespace Rugal.LocalFiler.Model
 
         public SaveConfig AddPath(string Path)
         {
+            Paths ??= new List<string> { };
             var PathList = Paths is IList<string> IListPaths ? IListPaths : Paths.ToList();
             PathList.Add(Path);
             Paths = PathList;
@@ -125,8 +126,16 @@ namespace Rugal.LocalFiler.Model
         {
             FileName = _FileName.ToString();
         }
+        public PathConfig(object _FileName, IEnumerable<string> _Paths = null) : this(_FileName)
+        {
+            AddPath(_Paths);
+        }
         public PathConfig AddPath(string Path)
         {
+            if (Path is null)
+                return this;
+
+            Paths ??= new List<string>();
             var PathList = Paths is IList<string> IListPaths ? IListPaths : Paths.ToList();
             PathList.Add(Path);
             Paths = PathList;
