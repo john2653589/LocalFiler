@@ -1,12 +1,13 @@
 ﻿using Rugal.LocalFiler.Model;
 using Microsoft.AspNetCore.Http;
+using System.Text.RegularExpressions;
 
 namespace Rugal.LocalFiler.Service
 {
     public partial class LocalFilerService
     {
-        public LocalFileManagerSetting Setting;
-        public LocalFilerService(LocalFileManagerSetting _Setting)
+        public LocalFilerSetting Setting;
+        public LocalFilerService(LocalFilerSetting _Setting)
         {
             Setting = _Setting;
         }
@@ -20,7 +21,7 @@ namespace Rugal.LocalFiler.Service
             {
                 var GetBuffer = ExtractBuffer.Invoke(Item);
                 var FileName = GetFileName.Invoke(Item).ToString();
-                var SetFileName = LocalSave<TData>(FileName, GetBuffer);
+                var SetFileName = SaveFile<TData>(FileName, GetBuffer);
                 SetFileNameFunc.Invoke(Item, SetFileName);
             }
             return this;
@@ -28,117 +29,162 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Save
-        public virtual string SaveFile<TData>(object FileName, byte[] SaveBuffer, params object[] Paths)
-           => LocalSave<TData>(FileName.ToString(), SaveBuffer, Paths);
-        public virtual string SaveFile(object FileName, byte[] SaveBuffer, params object[] Paths)
-            => LocalSave(FileName.ToString(), SaveBuffer, Paths);
-        public virtual string SaveFile(object FileName, IFormFile File, params object[] Paths)
-            => LocalSave(FileName.ToString(), File, Paths);
-        public virtual string SaveFile<TData>(object FileName, string Extension, byte[] SaveBuffer, params object[] Paths)
-            => LocalSave<TData>(CombineExtension(FileName, Extension), SaveBuffer, Paths);
-        public virtual string SaveFile(object FileName, string Extension, byte[] SaveBuffer, params object[] Paths)
-            => LocalSave(CombineExtension(FileName, Extension), SaveBuffer, Paths);
-        public virtual string SaveFile(object FileName, string Extension, IFormFile File, params object[] Paths)
-             => LocalSave(CombineExtension(FileName, Extension), File, Paths);
+        public virtual string SaveFile(SaveConfig Config, Action<SaveConfig> ConfigFunc = null)
+        {
+            ConfigFunc?.Invoke(Config);
+            var Result = LocalSave(Config);
+            return Result;
+        }
+        public virtual string SaveFile(Action<SaveConfig> ConfigFunc)
+        {
+            var Config = new SaveConfig();
+            var Result = SaveFile(Config, ConfigFunc);
+            return Result;
+        }
+        public virtual string SaveFile(object FileName, byte[] Buffer, Action<SaveConfig> ConfigFunc = null)
+        {
+            var Config = new SaveConfig(FileName, Buffer);
+            var Result = SaveFile(Config, ConfigFunc);
+            return Result;
+        }
+        public virtual string SaveFile<TData>(object FileName, byte[] Buffer, Action<SaveConfig> ConfigFunc = null)
+        {
+            var Config = new SaveConfig(FileName, Buffer)
+                .AddPath(typeof(TData).Name);
+
+            var Result = SaveFile(Config, ConfigFunc);
+            return Result;
+        }
+        public virtual string SaveFile(object FileName, IFormFile File, Action<SaveConfig> ConfigFunc = null)
+        {
+            var Config = new SaveConfig(FileName, File);
+            var Result = SaveFile(Config, ConfigFunc);
+            return Result;
+        }
+        public virtual string SaveFile<TData>(object FileName, IFormFile File, Action<SaveConfig> ConfigFunc = null)
+        {
+            var Config = new SaveConfig(FileName, File)
+                .AddPath(typeof(TData).Name);
+            var Result = SaveFile(Config, ConfigFunc);
+            return Result;
+        }
         #endregion
 
         #region File Read
-        public virtual byte[] ReadFile<TData>(object FileName, params object[] Paths)
+        private byte[] BaseReadFile(PathConfig Config)
         {
-            var FindPaths = Paths.ToList();
-            FindPaths.Add(typeof(TData).Name);
-            var FileBuffer = BaseReadFile(FileName, FindPaths);
-            return FileBuffer;
-        }
-        public virtual byte[] ReadFile(Type DataType, object FileName, params object[] Paths)
-        {
-            var FindPaths = Paths.ToList();
-            FindPaths.Add(DataType.Name);
-            var FileBuffer = BaseReadFile(FileName, FindPaths);
-            return FileBuffer;
-        }
-        public virtual byte[] ReadFile(object FileName, params object[] Paths)
-        {
-            var FileBuffer = BaseReadFile(FileName, Paths);
-            return FileBuffer;
-        }
-        private byte[] BaseReadFile(object FileName, IEnumerable<object> Paths)
-        {
-            if (FileName is null)
+            if (Config.FileName is null)
                 return Array.Empty<byte>();
 
-            var FullFileName = CombineFullName(FileName, out _, Paths);
+            var FullFileName = CombineRootFileName(Config.FileName, Config.Paths);
             if (!File.Exists(FullFileName))
                 return Array.Empty<byte>();
 
             var FileBuffer = File.ReadAllBytes(FullFileName);
             return FileBuffer;
         }
+        public virtual byte[] ReadFile<TData>(object FileName, IEnumerable<string> Paths)
+        {
+            var Config = new PathConfig(FileName)
+                .AddPath(Paths)
+                .AddPath(typeof(TData).Name);
 
-        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, params object[] Paths)
-        {
-            var FindPaths = Paths.ToList();
-            FindPaths.Add(typeof(TData).Name);
-            var FileBuffer = BaseReadFileAsync(FileName, FindPaths);
+            var FileBuffer = BaseReadFile(Config);
             return FileBuffer;
         }
-        public virtual Task<byte[]> ReadFileAsync(Type DataType, object FileName, params object[] Paths)
+        public virtual byte[] ReadFile(object FileName, IEnumerable<string> Paths)
         {
-            var FindPaths = Paths.ToList();
-            FindPaths.Add(DataType.Name);
-            var FileBuffer = BaseReadFileAsync(FileName, FindPaths);
+            var Config = new PathConfig(FileName)
+                .AddPath(Paths);
+
+            var FileBuffer = BaseReadFile(Config);
             return FileBuffer;
         }
-        public virtual Task<byte[]> ReadFileAsync(object FileName, params object[] Paths)
+
+        private Task<byte[]> BaseReadFileAsync(PathConfig Config)
         {
-            var FileBuffer = BaseReadFileAsync(FileName, Paths);
-            return FileBuffer;
-        }
-        private Task<byte[]> BaseReadFileAsync(object FileName, IEnumerable<object> Paths)
-        {
-            if (FileName is null)
+            if (Config.FileName is null)
                 return Task.FromResult(Array.Empty<byte>());
 
-            var FullFileName = CombineFullName(FileName, out _, Paths);
+            var FullFileName = CombineRootFileName(Config.FileName, Config.Paths);
             if (!File.Exists(FullFileName))
                 return Task.FromResult(Array.Empty<byte>());
 
             var FileBuffer = File.ReadAllBytesAsync(FullFileName);
             return FileBuffer;
         }
+        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, IEnumerable<string> Paths)
+        {
+            var Config = new PathConfig(FileName)
+                .AddPath(Paths)
+                .AddPath(typeof(TData).Name);
+
+            var FileBuffer = BaseReadFileAsync(Config);
+            return FileBuffer;
+        }
+        public virtual Task<byte[]> ReadFileAsync(object FileName, IEnumerable<string> Paths)
+        {
+            var Config = new PathConfig(FileName).AddPath(Paths);
+            var FileBuffer = BaseReadFileAsync(Config);
+            return FileBuffer;
+        }
         #endregion
 
         #region File Delete
-        public virtual bool DeleteFile<TData>(IEnumerable<object> FileNames)
+        public virtual bool DeleteFile(IEnumerable<string> FileNames)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
-                IsDelete = IsDelete && DeleteFile(typeof(TData), Item);
+            {
+                var Config = new PathConfig(Item);
+                IsDelete = IsDelete && DeleteFile(Config);
+            }
+            return IsDelete;
+        }
+        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames)
+        {
+            var IsDelete = true;
+            foreach (var Item in FileNames)
+            {
+                var Config = new PathConfig(Item)
+                    .AddPath(typeof(TData).Name);
+
+                IsDelete = IsDelete && DeleteFile(Config);
+            }
+            return IsDelete;
+        }
+        public virtual bool DeleteFile(object FileName)
+        {
+            var Config = new PathConfig(FileName);
+            var IsDelete = DeleteFile(Config);
+            return IsDelete;
+        }
+        public virtual bool DeleteFile<TData>(object FileName)
+        {
+            var Config = new PathConfig(FileName)
+                .AddPath(typeof(TData).Name);
+
+            var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
         public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc)
         {
             var IsDelete = true;
             foreach (var Item in FileDatas)
-                IsDelete = IsDelete && DeleteFile(typeof(TData), GetColumnFunc(Item));
+            {
+                var GetFileName = GetColumnFunc(Item);
+                var Config = new PathConfig(GetFileName)
+                    .AddPath(typeof(TData).Name);
+                IsDelete = IsDelete && DeleteFile(Config);
+            }
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(object FileName)
+        public bool DeleteFile(PathConfig Config)
         {
-            var IsDelete = DeleteFile(typeof(TData), FileName);
-            return IsDelete;
-        }
-        public virtual bool DeleteFile(Type DataType, object FileName)
-        {
-            var IsDelete = DeleteFile(DataType.Name, FileName);
-            return IsDelete;
-        }
-        public virtual bool DeleteFile(string DirectoryName, object FileName)
-        {
-            if (FileName is null)
+            if (Config.FileName is null)
                 return false;
 
-            var FullFileName = CombineFullName(FileName, out _, new[] { DirectoryName });
+            var FullFileName = CombineRootFileName(Config.FileName, Config.Paths);
             if (!File.Exists(FullFileName))
                 return false;
 
@@ -148,32 +194,57 @@ namespace Rugal.LocalFiler.Service
         }
         #endregion
 
-        #region Combine Path
-        public virtual string CombinePaths(params string[] Paths)
-        {
-            var FullFileName = CombineFullPath(Paths);
-            return FullFileName;
-        }
-        public virtual string CombinePaths(LocalFileInfoModel Model)
-        {
-            var FullFileName = CombineFullPath(Model.Path, Model.FileName);
-            return FullFileName;
-        }
         #endregion
 
-        #endregion
-
-        #region Internal Function
-        internal virtual string ConvertFullName(object FileName, IEnumerable<object> Paths)
-        {
-            var FullFileName = CombineFullName(FileName, out _, Paths);
-            return FullFileName;
-        }
-        internal string CombineFullName(object FileName, out string SetFileName, IEnumerable<object> Paths)
+        #region Convert file name and root file name
+        public virtual string CombineRootFileName(string FileName, out string SetFileName, IEnumerable<string> Paths = null)
         {
             SetFileName = ConvertFileName(FileName);
 
-            var ClearPaths = new[] { Setting.RootPath }.ToList();
+            VerifyFileName(SetFileName);
+
+            var PathList = Paths.ToList();
+            PathList.Add(SetFileName);
+
+            var FullFileName = CombineRootPaths(PathList);
+            return FullFileName;
+        }
+        public virtual string CombineRootFileName(string FileName, IEnumerable<string> Paths = null)
+        {
+            var FullFileName = CombineRootFileName(FileName, out _, Paths);
+            return FullFileName;
+        }
+        public virtual string CombineRootFileName(LocalFilerInfo Model)
+        {
+            var FullFileName = CombineRootFileName(Model.FileName, new[] { Model.Path });
+            return FullFileName;
+        }
+        public virtual string CombineExtension(string FileName, string Extension)
+        {
+            var ClearFileName = FileName.TrimEnd('.');
+            if (string.IsNullOrWhiteSpace(Extension))
+                return FileName;
+
+            var CombineFileName = $"{ClearFileName}.{Extension.ToLower().TrimStart('.')}";
+            return CombineFileName;
+        }
+        #endregion
+
+        #region Private Method
+        private static string ConvertFileName(string FileName)
+        {
+            if (FileName is null)
+                return null;
+
+            var SetFileName = FileName.Replace("-", "").ToUpper();
+            return SetFileName;
+        }
+        private string CombineRootPaths(IEnumerable<string> Paths)
+        {
+            var AllPaths = new[]
+            {
+                Setting.RootPath,
+            }.ToList();
 
             var ConvertPaths = Paths?
                 .Select(Item => Item?.ToString().TrimStart('/').TrimEnd('/').Split('/'))
@@ -181,60 +252,42 @@ namespace Rugal.LocalFiler.Service
                 .SelectMany(Item => Item)
                 .ToList();
 
-            ClearPaths.AddRange(ConvertPaths);
-            ClearPaths.Add(SetFileName);
+            foreach (var Item in ConvertPaths)
+                if (Path.IsPathRooted(Item))
+                    throw new Exception("not allowed path");
 
-            var FullFileName = Path.Combine(ClearPaths.ToArray()).Replace(@"\", "/");
-            return FullFileName;
-        }
-        internal string CombineFullPath(params string[] Paths)
-        {
-            var AllPaths = new[]
-            {
-                Setting.RootPath,
-            }.ToList();
-
-            AllPaths.AddRange(Paths);
+            AllPaths.AddRange(ConvertPaths);
             var FullPath = Path.Combine(AllPaths.ToArray()).Replace(@"\", "/");
+
             return FullPath;
         }
-        internal virtual string ConvertFileName(object FileName)
+        private string ProcessFileNameExtension(SaveConfig Config, out string SetFileName)
         {
-            if (FileName is null)
-                return "";
+            var FileName = Config.FileName;
 
-            var SetFileName = FileName.ToString().Replace("-", "").ToUpper();
-            return SetFileName;
-        }
-        internal virtual string CombineExtension(object FileName, string Extension)
-        {
-            var CombineFileName = $"{FileName.ToString().TrimEnd('.')}.{Extension.ToLower().TrimStart('.')}";
-            return CombineFileName;
-        }
-        #endregion
+            if (Setting.DefaultExtensionFromFile && Config.SaveBy == SaveByType.FormFile && !Config.HasExtension)
+                Config.UseFileExtension();
 
-        #region Private Method
-        private string LocalSave<TData>(string FileName, byte[] SaveBuffer, params object[] Paths)
-        {
-            var FindPaths = Paths.ToList();
-            FindPaths.Add(typeof(TData).Name);
-            var FullFileName = CombineFullName(FileName, out var SetFileName, FindPaths);
-            BaseWriteFile(FullFileName, SaveBuffer);
-            return SetFileName;
+            if (Config.HasExtension)
+                FileName = CombineExtension(FileName, Config.Extension);
+
+            var FullFileName = CombineRootFileName(FileName, out SetFileName, Config.Paths);
+            if (!Setting.UseExtension)
+                return FullFileName;
+
+            return FullFileName;
         }
-        private string LocalSave(string FileName, byte[] SaveBuffer, params object[] Paths)
+        private string LocalSave(SaveConfig Config)
         {
-            var FullFileName = CombineFullName(FileName, out var SetFileName, Paths);
-            BaseWriteFile(FullFileName, SaveBuffer);
-            return SetFileName;
-        }
-        private string LocalSave(string FileName, IFormFile File, params object[] Paths)
-        {
-            var FullFileName = CombineFullName(FileName, out var SetFileName, Paths);
-            using var Ms = new MemoryStream();
-            File.CopyTo(Ms);
-            BaseWriteFile(FullFileName, Ms.ToArray());
-            Ms?.Dispose();
+            var FullFileName = ProcessFileNameExtension(Config, out var SetFileName);
+            if (Config.SaveBy == SaveByType.FormFile)
+            {
+                using var Ms = new MemoryStream();
+                Config.FormFile.CopyTo(Ms);
+                Config.Buffer = Ms.ToArray();
+            }
+
+            BaseWriteFile(FullFileName, Config.Buffer);
             return SetFileName;
         }
         private static void BaseWriteFile(string FullFileName, byte[] WriteBuffer)
@@ -244,6 +297,19 @@ namespace Rugal.LocalFiler.Service
                 Info.Directory.Create();
 
             File.WriteAllBytes(FullFileName, WriteBuffer);
+        }
+        private static void VerifyFileName(string FileName)
+        {
+            var WhiteList = new Regex(@"^[a-zA-Z0-9_.-]+$");
+            if (!WhiteList.IsMatch(FileName))
+                throw new Exception("file name verification failed");
+
+            var BlackList = new[] { ".." };
+            foreach (var Item in BlackList)
+            {
+                if (FileName.Contains(Item))
+                    throw new Exception("file name verification failed");
+            }
         }
         #endregion
     }
