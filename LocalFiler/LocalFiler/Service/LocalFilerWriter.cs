@@ -1,5 +1,4 @@
 ﻿using Rugal.LocalFiler.Model;
-using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
 namespace Rugal.LocalFiler.Service

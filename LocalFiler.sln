@@ -5,7 +5,7 @@ VisualStudioVersion = 17.5.33516.290
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LocalFiler", "LocalFiler\LocalFiler.csproj", "{1558235C-8F42-4F7C-9F44-99E06DC9248A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalFiler.Api", "LocalFiler.Api\LocalFiler.Api.csproj", "{F6660525-1796-4E0F-8CE7-8AF2C22A0EE2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LocalFiler.Api", "LocalFiler.Api\LocalFiler.Api.csproj", "{F6660525-1796-4E0F-8CE7-8AF2C22A0EE2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
