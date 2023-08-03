@@ -86,6 +86,18 @@ namespace Rugal.LocalFiler.Model
             Paths = PathList;
             return this;
         }
+        public SaveConfig AddPath(IEnumerable<string> Paths)
+        {
+            if (Paths is null)
+                return this;
+
+            foreach (var Item in Paths)
+                AddPath(Item);
+
+            return this;
+        }
+
+
         public SaveConfig UseFileExtension()
         {
             if (FormFile is null)
