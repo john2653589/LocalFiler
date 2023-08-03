@@ -24,7 +24,7 @@ public class TestController : ControllerBase
         Filer.SaveFile<A>("test3", Buffer2, Item => Item.Extension = "jpg");
         Filer.DeleteFile<A>("test3.jpg");
 
-        Filer.SaveFile("test4", File);
+        Filer.SaveFile<A>("test4", File);
         return true;
     }
 }

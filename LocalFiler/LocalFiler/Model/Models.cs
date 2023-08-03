@@ -91,7 +91,7 @@ namespace Rugal.LocalFiler.Model
             if (FormFile is null)
                 return this;
 
-            Extension = FormFile.Name.Split('.').Last();
+            Extension = Path.GetExtension(FormFile.FileName);
             return this;
         }
         public SaveConfig WithFile(IFormFile File, bool UseExtension = true)
