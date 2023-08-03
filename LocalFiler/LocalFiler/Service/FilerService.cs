@@ -53,7 +53,7 @@ namespace Rugal.LocalFiler.Service
             ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
 
-            var Result = SaveFile(Config, ConfigFunc);
+            var Result = SaveFile(Config);
             return Result;
         }
         public virtual string SaveFile(object FileName, IFormFile File, Action<SaveConfig> ConfigFunc = null)
@@ -67,7 +67,7 @@ namespace Rugal.LocalFiler.Service
             var Config = new SaveConfig(FileName, File);
             ConfigFunc.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
-            var Result = SaveFile(Config, ConfigFunc);
+            var Result = SaveFile(Config);
             return Result;
         }
         #endregion
