@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Rugal.LocalFiler.Model;
+using Rugal.LocalFiler.Service;
 
 namespace Rugal.LocalFiler.Extention
 {
@@ -37,7 +38,7 @@ namespace Rugal.LocalFiler.Extention
         }
         public static IServiceCollection AddLocalFiler_Service(this IServiceCollection Services)
         {
-            Services.AddSingleton<LocalFiler>();
+            Services.AddSingleton<FilerService>();
             return Services;
         }
         private static FilerSetting NewSetting(IConfiguration Configuration)
