@@ -2,7 +2,7 @@
 
 namespace Rugal.LocalFiler.Model
 {
-    public class LocalFilerSetting
+    public class FilerSetting
     {
         public bool DefaultExtensionFromFile { get; set; }
         public bool UseExtension { get; set; }
@@ -50,7 +50,7 @@ namespace Rugal.LocalFiler.Model
             return GetRootPath;
         }
     }
-    public class LocalFilerInfo
+    public class FilerInfo
     {
         public string FileName { get; set; }
         public string Path { get; set; }

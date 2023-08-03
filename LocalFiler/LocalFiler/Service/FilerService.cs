@@ -4,10 +4,10 @@ using System.Text.RegularExpressions;
 
 namespace Rugal.LocalFiler.Service
 {
-    public partial class LocalFilerService
+    public partial class FilerService
     {
-        public LocalFilerSetting Setting;
-        public LocalFilerService(LocalFilerSetting _Setting)
+        public FilerSetting Setting;
+        public FilerService(FilerSetting _Setting)
         {
             Setting = _Setting;
         }
@@ -15,7 +15,7 @@ namespace Rugal.LocalFiler.Service
         #region Public Method
 
         #region Transfer
-        public virtual LocalFilerService TransferSave<TData>(IEnumerable<TData> Datas, Func<TData, byte[]> ExtractBuffer, Func<TData, object> GetFileName, Action<TData, string> SetFileNameFunc)
+        public virtual FilerService TransferSave<TData>(IEnumerable<TData> Datas, Func<TData, byte[]> ExtractBuffer, Func<TData, object> GetFileName, Action<TData, string> SetFileNameFunc)
         {
             foreach (var Item in Datas)
             {
@@ -201,6 +201,7 @@ namespace Rugal.LocalFiler.Service
 
             VerifyFileName(SetFileName);
 
+            Paths ??= new List<string> { };
             var PathList = Paths.ToList();
             PathList.Add(SetFileName);
 
@@ -212,7 +213,7 @@ namespace Rugal.LocalFiler.Service
             var FullFileName = CombineRootFileName(FileName, out _, Paths);
             return FullFileName;
         }
-        public virtual string CombineRootFileName(LocalFilerInfo Model)
+        public virtual string CombineRootFileName(FilerInfo Model)
         {
             var FullFileName = CombineRootFileName(Model.FileName, new[] { Model.Path });
             return FullFileName;

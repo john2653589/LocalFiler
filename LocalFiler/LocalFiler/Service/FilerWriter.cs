@@ -3,33 +3,33 @@ using System.Text.RegularExpressions;
 
 namespace Rugal.LocalFiler.Service
 {
-    public partial class LocalFilerWriter : IDisposable
+    public partial class FilerWriter : IDisposable
     {
         #region Property
         public FileInfo Info { get; set; }
         public FileStream Stream { get; set; }
-        public LocalFilerInfo LocalInfo { get; set; }
-        public LocalFilerService LocalFileService { get; set; }
+        public FilerInfo LocalInfo { get; set; }
+        public FilerService LocalFileService { get; set; }
         public bool IsExist => Info.Exists;
         public bool IsTemp => Info.Extension.ToLower() == ".tmp";
         public long Length => Info is not null && Info.Exists ? Info.Length : 0;
         #endregion
-        public LocalFilerWriter(LocalFilerService _LocalFileService)
+        public FilerWriter(FilerService _FilerService)
         {
-            LocalFileService = _LocalFileService;
+            LocalFileService = _FilerService;
         }
-        public LocalFilerWriter(LocalFilerService _LocalFileService, LocalFilerInfo Model) : this(_LocalFileService)
+        public FilerWriter(FilerService _FilerService, FilerInfo Model) : this(_FilerService)
         {
             WithFile(Model);
         }
 
         #region With property
-        public LocalFilerWriter WithFilerService(LocalFilerService _LocalFileService)
+        public FilerWriter WithFilerService(FilerService _FilerService)
         {
-            LocalFileService = _LocalFileService;
+            LocalFileService = _FilerService;
             return this;
         }
-        public LocalFilerWriter WithFile(LocalFilerInfo Model)
+        public FilerWriter WithFile(FilerInfo Model)
         {
             var FullFileName = LocalFileService.CombineRootFileName(Model);
             LocalInfo = Model;
@@ -37,7 +37,7 @@ namespace Rugal.LocalFiler.Service
             ClearStream();
             return this;
         }
-        public LocalFilerWriter WithTemp()
+        public FilerWriter WithTemp()
         {
             LocalInfo.FileName = $"{LocalInfo.FileName}.tmp";
             var TempPath = LocalFileService.CombineRootFileName(LocalInfo);
@@ -45,7 +45,7 @@ namespace Rugal.LocalFiler.Service
             ClearStream();
             return this;
         }
-        public LocalFilerWriter WithRemoveTemp()
+        public FilerWriter WithRemoveTemp()
         {
             var ReFileName = Regex.Replace(LocalInfo.FileName, ".tmp$", "");
             ClearStream();
@@ -71,7 +71,7 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region Open and seek
-        public LocalFilerWriter OpenRead(long SeekLength = 0)
+        public FilerWriter OpenRead(long SeekLength = 0)
         {
             if (Stream is not null)
                 ClearStream();
@@ -84,7 +84,7 @@ namespace Rugal.LocalFiler.Service
                 Seek(SeekLength);
             return this;
         }
-        public LocalFilerWriter OpenWrite(long SeekLength = 0)
+        public FilerWriter OpenWrite(long SeekLength = 0)
         {
             if (Stream is not null)
                 ClearStream();
@@ -97,24 +97,24 @@ namespace Rugal.LocalFiler.Service
                 Seek(SeekLength);
             return this;
         }
-        public LocalFilerWriter OpenReadFromEnd()
+        public FilerWriter OpenReadFromEnd()
         {
             OpenRead();
             SeekFromEnd();
             return this;
         }
-        public LocalFilerWriter OpenWriteFromEnd()
+        public FilerWriter OpenWriteFromEnd()
         {
             OpenWrite();
             SeekFromEnd();
             return this;
         }
-        public LocalFilerWriter Seek(long SeekLength)
+        public FilerWriter Seek(long SeekLength)
         {
             Stream.Seek(SeekLength, SeekOrigin.Begin);
             return this;
         }
-        public LocalFilerWriter SeekFromEnd()
+        public FilerWriter SeekFromEnd()
         {
             Stream.Seek(Stream.Length, SeekOrigin.Begin);
             return this;
@@ -151,7 +151,7 @@ namespace Rugal.LocalFiler.Service
             }
             return true;
         }
-        public LocalFilerWriter WriteBytes(byte[] Source, long MaxWriteLength = 1024)
+        public FilerWriter WriteBytes(byte[] Source, long MaxWriteLength = 1024)
         {
             if (Stream is null)
                 OpenWriteFromEnd();
@@ -165,7 +165,7 @@ namespace Rugal.LocalFiler.Service
             });
             return this;
         }
-        public LocalFilerWriter ReadBytes(Func<byte[], bool> ReadFunc, long MaxReadLength = 1024)
+        public FilerWriter ReadBytes(Func<byte[], bool> ReadFunc, long MaxReadLength = 1024)
         {
             if (Stream is null)
                 OpenRead();
@@ -178,7 +178,7 @@ namespace Rugal.LocalFiler.Service
             });
             return this;
         }
-        public async Task<LocalFilerWriter> WriteBytesAsync(byte[] Source, long MaxWriteLength = 1024)
+        public async Task<FilerWriter> WriteBytesAsync(byte[] Source, long MaxWriteLength = 1024)
         {
             if (Stream is null)
                 OpenWriteFromEnd();
@@ -192,7 +192,7 @@ namespace Rugal.LocalFiler.Service
             });
             return this;
         }
-        public async Task<LocalFilerWriter> ReadBytesAsync(Func<byte[], Task<bool>> ReadFunc, long MaxReadLength)
+        public async Task<FilerWriter> ReadBytesAsync(Func<byte[], Task<bool>> ReadFunc, long MaxReadLength)
         {
             if (Stream is null)
                 OpenRead();
@@ -208,7 +208,7 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region Control
-        public LocalFilerWriter ReName(string NewName)
+        public FilerWriter ReName(string NewName)
         {
             var SourcePath = LocalFileService.CombineRootFileName(LocalInfo);
             LocalInfo.FileName = NewName;
