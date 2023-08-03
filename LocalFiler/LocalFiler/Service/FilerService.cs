@@ -49,8 +49,9 @@ namespace Rugal.LocalFiler.Service
         }
         public virtual string SaveFile<TData>(object FileName, byte[] Buffer, Action<SaveConfig> ConfigFunc = null)
         {
-            var Config = new SaveConfig(FileName, Buffer)
-                .AddPath(typeof(TData).Name);
+            var Config = new SaveConfig(FileName, Buffer);
+            ConfigFunc?.Invoke(Config);
+            Config.AddPath(typeof(TData).Name);
 
             var Result = SaveFile(Config, ConfigFunc);
             return Result;
@@ -63,8 +64,9 @@ namespace Rugal.LocalFiler.Service
         }
         public virtual string SaveFile<TData>(object FileName, IFormFile File, Action<SaveConfig> ConfigFunc = null)
         {
-            var Config = new SaveConfig(FileName, File)
-                .AddPath(typeof(TData).Name);
+            var Config = new SaveConfig(FileName, File);
+            ConfigFunc.Invoke(Config);
+            Config.AddPath(typeof(TData).Name);
             var Result = SaveFile(Config, ConfigFunc);
             return Result;
         }
