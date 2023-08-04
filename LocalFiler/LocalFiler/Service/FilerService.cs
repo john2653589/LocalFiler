@@ -65,7 +65,7 @@ namespace Rugal.LocalFiler.Service
         public virtual string SaveFile<TData>(object FileName, IFormFile File, Action<SaveConfig> ConfigFunc = null)
         {
             var Config = new SaveConfig(FileName, File);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
             var Result = SaveFile(Config);
             return Result;
@@ -100,18 +100,18 @@ namespace Rugal.LocalFiler.Service
             var FileBuffer = BaseReadFile(Config);
             return FileBuffer;
         }
-        public virtual byte[] ReadFile<TData>(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual byte[] ReadFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
             var FileBuffer = BaseReadFile(Config);
             return FileBuffer;
         }
-        public virtual byte[] ReadFile(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual byte[] ReadFile(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             var FileBuffer = BaseReadFile(Config);
             return FileBuffer;
         }
@@ -142,19 +142,19 @@ namespace Rugal.LocalFiler.Service
             var FileBuffer = BaseReadFileAsync(Config);
             return FileBuffer;
         }
-        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
 
             var FileBuffer = BaseReadFileAsync(Config);
             return FileBuffer;
         }
-        public virtual Task<byte[]> ReadFileAsync(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual Task<byte[]> ReadFileAsync(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             var FileBuffer = BaseReadFileAsync(Config);
             return FileBuffer;
         }
@@ -186,7 +186,6 @@ namespace Rugal.LocalFiler.Service
         public virtual bool DeleteFile(object FileName, IEnumerable<string> Paths = null)
         {
             var Config = new PathConfig(FileName, Paths);
-
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
@@ -199,41 +198,41 @@ namespace Rugal.LocalFiler.Service
             return IsDelete;
         }
 
-        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
             {
                 var Config = new PathConfig(Item);
-                ConfigFunc.Invoke(Config);
+                ConfigFunc?.Invoke(Config);
                 IsDelete = IsDelete && DeleteFile(Config);
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
             {
                 var Config = new PathConfig(Item);
-                ConfigFunc.Invoke(Config);
+                ConfigFunc?.Invoke(Config);
                 Config.AddPath(typeof(TData).Name);
 
                 IsDelete = IsDelete && DeleteFile(Config);
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
-            ConfigFunc.Invoke(Config);
+            ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
 
             var IsDelete = DeleteFile(Config);
@@ -252,14 +251,14 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileDatas)
             {
                 var GetFileName = GetColumnFunc(Item);
                 var Config = new PathConfig(GetFileName);
-                ConfigFunc.Invoke(Config);
+                ConfigFunc?.Invoke(Config);
                 Config.AddPath(typeof(TData).Name);
                 IsDelete = IsDelete && DeleteFile(Config);
             }
