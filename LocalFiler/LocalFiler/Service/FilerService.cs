@@ -172,7 +172,7 @@ namespace Rugal.LocalFiler.Service
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileDatas)
