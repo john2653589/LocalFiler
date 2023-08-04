@@ -161,44 +161,7 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Delete
-        public virtual bool DeleteFile(IEnumerable<string> FileNames, IEnumerable<string> Paths = null)
-        {
-            var IsDelete = true;
-            foreach (var Item in FileNames)
-            {
-                var Config = new PathConfig(Item, Paths);
-                IsDelete = IsDelete && DeleteFile(Config);
-            }
-            return IsDelete;
-        }
-        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, IEnumerable<string> Paths = null)
-        {
-            var IsDelete = true;
-            foreach (var Item in FileNames)
-            {
-                var Config = new PathConfig(Item, Paths)
-                    .AddPath(typeof(TData).Name);
-
-                IsDelete = IsDelete && DeleteFile(Config);
-            }
-            return IsDelete;
-        }
-        public virtual bool DeleteFile(object FileName, IEnumerable<string> Paths = null)
-        {
-            var Config = new PathConfig(FileName, Paths);
-            var IsDelete = DeleteFile(Config);
-            return IsDelete;
-        }
-        public virtual bool DeleteFile<TData>(object FileName, IEnumerable<string> Paths = null)
-        {
-            var Config = new PathConfig(FileName, Paths)
-                .AddPath(typeof(TData).Name);
-
-            var IsDelete = DeleteFile(Config);
-            return IsDelete;
-        }
-
-        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
@@ -209,7 +172,7 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
@@ -222,14 +185,14 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc)
         {
             var Config = new PathConfig(FileName);
             ConfigFunc?.Invoke(Config);
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc)
         {
             var Config = new PathConfig(FileName);
             ConfigFunc?.Invoke(Config);
@@ -238,20 +201,7 @@ namespace Rugal.LocalFiler.Service
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-
-        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, IEnumerable<string> Paths = null)
-        {
-            var IsDelete = true;
-            foreach (var Item in FileDatas)
-            {
-                var GetFileName = GetColumnFunc(Item);
-                var Config = new PathConfig(GetFileName, Paths)
-                    .AddPath(typeof(TData).Name);
-                IsDelete = IsDelete && DeleteFile(Config);
-            }
-            return IsDelete;
-        }
-        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc)
         {
             var IsDelete = true;
             foreach (var Item in FileDatas)
@@ -264,7 +214,6 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-
         public bool DeleteFile(PathConfig Config)
         {
             if (Config.FileName is null)
