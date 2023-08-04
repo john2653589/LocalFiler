@@ -85,21 +85,6 @@ namespace Rugal.LocalFiler.Service
             var FileBuffer = File.ReadAllBytes(FullFileName);
             return FileBuffer;
         }
-        public virtual byte[] ReadFile<TData>(object FileName, IEnumerable<string> Paths = null)
-        {
-            var Config = new PathConfig(FileName, Paths)
-                .AddPath(typeof(TData).Name);
-
-            var FileBuffer = BaseReadFile(Config);
-            return FileBuffer;
-        }
-        public virtual byte[] ReadFile(object FileName, IEnumerable<string> Paths = null)
-        {
-            var Config = new PathConfig(FileName, Paths);
-
-            var FileBuffer = BaseReadFile(Config);
-            return FileBuffer;
-        }
         public virtual byte[] ReadFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
@@ -126,20 +111,6 @@ namespace Rugal.LocalFiler.Service
                 return Task.FromResult(Array.Empty<byte>());
 
             var FileBuffer = File.ReadAllBytesAsync(FullFileName);
-            return FileBuffer;
-        }
-        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, IEnumerable<string> Paths = null)
-        {
-            var Config = new PathConfig(FileName, Paths)
-                .AddPath(typeof(TData).Name);
-
-            var FileBuffer = BaseReadFileAsync(Config);
-            return FileBuffer;
-        }
-        public virtual Task<byte[]> ReadFileAsync(object FileName, IEnumerable<string> Paths = null)
-        {
-            var Config = new PathConfig(FileName, Paths);
-            var FileBuffer = BaseReadFileAsync(Config);
             return FileBuffer;
         }
         public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
