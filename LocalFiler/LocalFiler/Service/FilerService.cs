@@ -161,7 +161,7 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Delete
-        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
@@ -172,7 +172,7 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
@@ -185,14 +185,14 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
             ConfigFunc?.Invoke(Config);
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc)
+        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
         {
             var Config = new PathConfig(FileName);
             ConfigFunc?.Invoke(Config);
