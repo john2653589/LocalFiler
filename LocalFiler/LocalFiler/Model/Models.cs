@@ -136,7 +136,7 @@ namespace Rugal.LocalFiler.Model
         public PathConfig() { }
         public PathConfig(object _FileName)
         {
-            FileName = _FileName.ToString();
+            FileName = _FileName?.ToString();
         }
         public PathConfig(object _FileName, IEnumerable<string> _Paths = null) : this(_FileName)
         {

@@ -9,9 +9,9 @@
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 
 
-		<AssemblyVersion>1.0.7</AssemblyVersion>
-		<FileVersion>$(AssemblyVersion)</FileVersion>
-		<Version>$(AssemblyVersion)</Version>
+		<AssemblyVersion>1.0.8.1</AssemblyVersion>
+		<FileVersion>$(AssemblyVersion)-beta</FileVersion>
+		<Version>$(AssemblyVersion)-beta</Version>
 		<Authors>Rugal</Authors>
 	</PropertyGroup>
 
