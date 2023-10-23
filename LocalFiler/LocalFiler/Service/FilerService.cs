@@ -1,12 +1,12 @@
-﻿using Rugal.LocalFiler.Model;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
+using Rugal.LocalFiler.Model;
 using System.Text.RegularExpressions;
 
 namespace Rugal.LocalFiler.Service
 {
     public partial class FilerService
     {
-        public FilerSetting Setting;
+        public readonly FilerSetting Setting;
         public FilerService(FilerSetting _Setting)
         {
             Setting = _Setting;
@@ -29,6 +29,19 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Save
+        private string LocalSave(SaveConfig Config)
+        {
+            var FullFileName = ProcessFileNameExtension(Config, out var SetFileName);
+            if (Config.SaveBy == SaveByType.FormFile)
+            {
+                using var Ms = new MemoryStream();
+                Config.FormFile.CopyTo(Ms);
+                Config.Buffer = Ms.ToArray();
+            }
+
+            BaseWriteFile(FullFileName, Config.Buffer);
+            return SetFileName;
+        }
         public virtual string SaveFile(SaveConfig Config, Action<SaveConfig> ConfigFunc = null)
         {
             ConfigFunc?.Invoke(Config);
@@ -73,7 +86,7 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Read
-        private byte[] BaseReadFile(PathConfig Config)
+        private byte[] LocalRead(ReadConfig Config)
         {
             if (Config.FileName is null)
                 return Array.Empty<byte>();
@@ -85,23 +98,23 @@ namespace Rugal.LocalFiler.Service
             var FileBuffer = File.ReadAllBytes(FullFileName);
             return FileBuffer;
         }
-        public virtual byte[] ReadFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual byte[] ReadFile<TData>(object FileName, Action<ReadConfig> ConfigFunc = null)
         {
-            var Config = new PathConfig(FileName);
+            var Config = new ReadConfig(FileName);
             ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
-            var FileBuffer = BaseReadFile(Config);
+            var FileBuffer = LocalRead(Config);
             return FileBuffer;
         }
-        public virtual byte[] ReadFile(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual byte[] ReadFile(object FileName, Action<ReadConfig> ConfigFunc = null)
         {
-            var Config = new PathConfig(FileName);
+            var Config = new ReadConfig(FileName);
             ConfigFunc?.Invoke(Config);
-            var FileBuffer = BaseReadFile(Config);
+            var FileBuffer = LocalRead(Config);
             return FileBuffer;
         }
 
-        private Task<byte[]> BaseReadFileAsync(PathConfig Config)
+        private Task<byte[]> LocalReadAsync(ReadConfig Config)
         {
             if (Config.FileName is null)
                 return Task.FromResult(Array.Empty<byte>());
@@ -113,42 +126,42 @@ namespace Rugal.LocalFiler.Service
             var FileBuffer = File.ReadAllBytesAsync(FullFileName);
             return FileBuffer;
         }
-        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual Task<byte[]> ReadFileAsync<TData>(object FileName, Action<ReadConfig> ConfigFunc = null)
         {
-            var Config = new PathConfig(FileName);
+            var Config = new ReadConfig(FileName);
             ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
 
-            var FileBuffer = BaseReadFileAsync(Config);
+            var FileBuffer = LocalReadAsync(Config);
             return FileBuffer;
         }
-        public virtual Task<byte[]> ReadFileAsync(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual Task<byte[]> ReadFileAsync(object FileName, Action<ReadConfig> ConfigFunc = null)
         {
-            var Config = new PathConfig(FileName);
+            var Config = new ReadConfig(FileName);
             ConfigFunc?.Invoke(Config);
-            var FileBuffer = BaseReadFileAsync(Config);
+            var FileBuffer = LocalReadAsync(Config);
             return FileBuffer;
         }
         #endregion
 
         #region File Delete
-        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile(IEnumerable<string> FileNames, Action<ReadConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
             {
-                var Config = new PathConfig(Item);
+                var Config = new ReadConfig(Item);
                 ConfigFunc?.Invoke(Config);
                 IsDelete = IsDelete && DeleteFile(Config);
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile<TData>(IEnumerable<string> FileNames, Action<ReadConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileNames)
             {
-                var Config = new PathConfig(Item);
+                var Config = new ReadConfig(Item);
                 ConfigFunc?.Invoke(Config);
                 Config.AddPath(typeof(TData).Name);
 
@@ -156,36 +169,36 @@ namespace Rugal.LocalFiler.Service
             }
             return IsDelete;
         }
-        public virtual bool DeleteFile(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile(object FileName, Action<ReadConfig> ConfigFunc = null)
         {
-            var Config = new PathConfig(FileName);
+            var Config = new ReadConfig(FileName);
             ConfigFunc?.Invoke(Config);
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData>(object FileName, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile<TData>(object FileName, Action<ReadConfig> ConfigFunc = null)
         {
-            var Config = new PathConfig(FileName);
+            var Config = new ReadConfig(FileName);
             ConfigFunc?.Invoke(Config);
             Config.AddPath(typeof(TData).Name);
 
             var IsDelete = DeleteFile(Config);
             return IsDelete;
         }
-        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<PathConfig> ConfigFunc = null)
+        public virtual bool DeleteFile<TData, TColumn>(IEnumerable<TData> FileDatas, Func<TData, TColumn> GetColumnFunc, Action<ReadConfig> ConfigFunc = null)
         {
             var IsDelete = true;
             foreach (var Item in FileDatas)
             {
                 var GetFileName = GetColumnFunc(Item);
-                var Config = new PathConfig(GetFileName);
+                var Config = new ReadConfig(GetFileName);
                 ConfigFunc?.Invoke(Config);
                 Config.AddPath(typeof(TData).Name);
                 IsDelete = IsDelete && DeleteFile(Config);
             }
             return IsDelete;
         }
-        public bool DeleteFile(PathConfig Config)
+        public bool DeleteFile(ReadConfig Config)
         {
             if (Config.FileName is null)
                 return false;
@@ -200,14 +213,95 @@ namespace Rugal.LocalFiler.Service
         }
         #endregion
 
+        #region File Info
+        public virtual FilerInfo InfoFile(ReadConfig Config)
+        {
+            if (Config.FileName is null)
+                throw new Exception("file name can not be null");
+
+            var FullFileName = CombineRootFileName(Config);
+            var Result = new FilerInfo(this, Config);
+
+            return Result;
+        }
+        public virtual FilerInfo InfoFile(Action<ReadConfig> ConfigFunc)
+        {
+            var Config = new ReadConfig();
+            ConfigFunc.Invoke(Config);
+            var Result = InfoFile(Config);
+            return Result;
+        }
+        public virtual FolderInfo InfoFolder()
+        {
+            var Config = new PathConfig().AddPath("/");
+            var Result = new FolderInfo(this, Config);
+            return Result;
+        }
+        public virtual FolderInfo InfoFolder(PathConfig Config)
+        {
+            var Result = new FolderInfo(this, Config);
+            return Result;
+        }
+        public virtual FolderInfo InfoFolder(Action<PathConfig> ConfigFunc)
+        {
+            var Config = new PathConfig();
+            ConfigFunc.Invoke(Config);
+            var Result = InfoFolder(Config);
+            return Result;
+        }
         #endregion
 
-        #region Convert file name and root file name
-        public virtual string CombineRootFileName(string FileName, out string SetFileName, IEnumerable<string> Paths = null)
+        #region File Control
+        public virtual FilerInfo ReNameInfo(FilerInfo Info, string NewFileName)
+        {
+            var NewConfig = Info.Config
+                .WithFileName(NewFileName);
+
+            var NewInfo = new FilerInfo(this, NewConfig);
+            return NewInfo;
+        }
+        public virtual FilerInfo ReNameFile(FilerInfo Info, string NewFileName)
+        {
+            var NewFullFileName = CombineRootFileName(NewFileName, Info.Config.Paths);
+            Info.BaseInfo.MoveTo(NewFullFileName, true);
+
+            var NewConfig = Info.Config.WithFileName(NewFileName);
+            var NewInfo = new FilerInfo(this, NewConfig);
+            return NewInfo;
+        }
+        public FilerInfo WithTempInfo(FilerInfo Info, string TempExtension = "tmp")
+        {
+            TempExtension = ConvertExtension(TempExtension);
+            var NewFileName = $"{Info.FileName}{TempExtension}";
+            var TempInfo = ReNameInfo(Info, NewFileName);
+            return TempInfo;
+        }
+        public FilerInfo RemoveTempInfo(FilerInfo Info, string TempExtension = "tmp")
+        {
+            TempExtension = ConvertExtension(TempExtension);
+            var NewFileName = Regex.Replace(Info.FileName, $"{TempExtension}$", "");
+            var NewInfo = ReNameInfo(Info, NewFileName);
+            return NewInfo;
+        }
+        public FilerInfo RemoveTempFile(FilerInfo Info, string TempExtension = "tmp")
+        {
+            TempExtension = ConvertExtension(TempExtension);
+            var NewFileName = Regex.Replace(Info.FileName, $"{TempExtension}$", "");
+            var NewInfo = ReNameFile(Info, NewFileName);
+            return NewInfo;
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Convert File Name And Root File Name
+        public virtual string CombineRootFileName(string FileName, out string SetFileName, IEnumerable<string> Paths = null, bool IsVerifyFileName = true)
         {
             SetFileName = ConvertFileName(FileName);
 
-            VerifyFileName(SetFileName);
+            if (IsVerifyFileName)
+                VerifyFileName(SetFileName);
 
             Paths ??= new List<string> { };
             var PathList = Paths.ToList();
@@ -216,14 +310,14 @@ namespace Rugal.LocalFiler.Service
             var FullFileName = CombineRootPaths(PathList);
             return FullFileName;
         }
-        public virtual string CombineRootFileName(string FileName, IEnumerable<string> Paths = null)
+        public virtual string CombineRootFileName(string FileName, IEnumerable<string> Paths = null, bool IsVerifyFileName = false)
         {
-            var FullFileName = CombineRootFileName(FileName, out _, Paths);
+            var FullFileName = CombineRootFileName(FileName, out _, Paths, IsVerifyFileName);
             return FullFileName;
         }
-        public virtual string CombineRootFileName(FilerInfo Model)
+        public virtual string CombineRootFileName(ReadConfig Config, bool IsVerifyFileName = false)
         {
-            var FullFileName = CombineRootFileName(Model.FileName, new[] { Model.Path });
+            var FullFileName = CombineRootFileName(Config.FileName, Config.Paths, IsVerifyFileName);
             return FullFileName;
         }
         public virtual string CombineExtension(string FileName, string Extension)
@@ -237,16 +331,8 @@ namespace Rugal.LocalFiler.Service
         }
         #endregion
 
-        #region Private Method
-        private static string ConvertFileName(string FileName)
-        {
-            if (FileName is null)
-                return null;
-
-            var SetFileName = FileName.Replace("-", "").ToUpper();
-            return SetFileName;
-        }
-        private string CombineRootPaths(IEnumerable<string> Paths)
+        #region Root Path Process
+        public virtual string CombineRootPaths(IEnumerable<string> Paths)
         {
             var AllPaths = new[]
             {
@@ -259,15 +345,47 @@ namespace Rugal.LocalFiler.Service
                 .SelectMany(Item => Item)
                 .ToList();
 
-            foreach (var Item in ConvertPaths)
-                if (Path.IsPathRooted(Item))
-                    throw new Exception("not allowed path");
+            if (ConvertPaths is not null)
+            {
+                foreach (var Item in ConvertPaths)
+                    VerifyPath(Item);
 
-            AllPaths.AddRange(ConvertPaths);
+                AllPaths.AddRange(ConvertPaths);
+            }
+
             var FullPath = Path.Combine(AllPaths.ToArray()).Replace(@"\", "/");
-
             return FullPath;
         }
+        public virtual string CombineRootPaths(PathConfig Config)
+        {
+            var Result = CombineRootPaths(Config.Paths);
+            return Result;
+        }
+        #endregion
+
+        #region Private Method
+        private string ConvertFileName(string FileName)
+        {
+            if (FileName is null)
+                return null;
+
+            var SetFileName = FileName.Replace("-", "");
+            SetFileName = Setting.FileNameCase switch
+            {
+                FileNameCaseType.None => SetFileName,
+                FileNameCaseType.Upper => SetFileName.ToUpper(),
+                FileNameCaseType.Lower => SetFileName.ToLower(),
+                _ => SetFileName,
+            };
+
+            return SetFileName;
+        }
+        private static string ConvertExtension(string Extension)
+        {
+            Extension = $".{Extension.Replace(".", "")}";
+            return Extension;
+        }
+
         private string ProcessFileNameExtension(SaveConfig Config, out string SetFileName)
         {
             var FileName = Config.FileName;
@@ -281,19 +399,6 @@ namespace Rugal.LocalFiler.Service
             var FullFileName = CombineRootFileName(FileName, out SetFileName, Config.Paths);
             return FullFileName;
         }
-        private string LocalSave(SaveConfig Config)
-        {
-            var FullFileName = ProcessFileNameExtension(Config, out var SetFileName);
-            if (Config.SaveBy == SaveByType.FormFile)
-            {
-                using var Ms = new MemoryStream();
-                Config.FormFile.CopyTo(Ms);
-                Config.Buffer = Ms.ToArray();
-            }
-
-            BaseWriteFile(FullFileName, Config.Buffer);
-            return SetFileName;
-        }
         private static void BaseWriteFile(string FullFileName, byte[] WriteBuffer)
         {
             var Info = new FileInfo(FullFileName);
@@ -302,18 +407,37 @@ namespace Rugal.LocalFiler.Service
 
             File.WriteAllBytes(FullFileName, WriteBuffer);
         }
-        private static void VerifyFileName(string FileName)
+        public static bool IsVerifyFileName(string FileName, out string ErrorMessage)
         {
+            ErrorMessage = null;
+
             var WhiteList = new Regex(@"^[a-zA-Z0-9_.-]+$");
             if (!WhiteList.IsMatch(FileName))
-                throw new Exception("file name verification failed");
+            {
+                ErrorMessage = "file name verification failed";
+                return false;
+            }
 
             var BlackList = new[] { ".." };
             foreach (var Item in BlackList)
             {
                 if (FileName.Contains(Item))
-                    throw new Exception("file name verification failed");
+                {
+                    ErrorMessage = "file name verification failed";
+                    return false;
+                }
             }
+            return true;
+        }
+        public static void VerifyFileName(string FileName)
+        {
+            if (!IsVerifyFileName(FileName, out var ErrorMessage))
+                throw new Exception(ErrorMessage);
+        }
+        public static void VerifyPath(string FilePath)
+        {
+            if (Path.IsPathRooted(FilePath))
+                throw new Exception("not allowed path");
         }
         #endregion
     }
