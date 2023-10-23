@@ -22,7 +22,7 @@ namespace Rugal.LocalFiler.Model
             _Folder = new Lazy<FolderInfo>(() => GetFolder());
         }
         public FilerInfo(FilerService _Filer, ReadConfig _Config) : this(_Filer, _Config, false) { }
-        
+
 
         public FilerInfo NextFile(PositionByType NextBy)
         {
@@ -147,6 +147,7 @@ namespace Rugal.LocalFiler.Model
         public readonly FilerService Filer;
         public readonly PathConfig Config;
         public readonly DirectoryInfo Info;
+        public bool IsRoot => !Config.Paths.Any();
         public FolderInfo ParentFolder => _ParentFolder.Value;
         public string FolderName => Info.Name;
         public IEnumerable<FilerInfo> Files => _Files.Value;

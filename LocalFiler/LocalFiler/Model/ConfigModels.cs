@@ -5,7 +5,10 @@ namespace Rugal.LocalFiler.Model
     public class PathConfig
     {
         public IEnumerable<string> Paths { get; set; }
-        public PathConfig() { }
+        public PathConfig()
+        {
+            Paths = new List<string>();
+        }
         public virtual PathConfig AddPath(string Path)
         {
             if (Path is null)

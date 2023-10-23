@@ -7,46 +7,46 @@ var Filer = new FilerService(new FilerSetting()
     RootPath = @"D:/Development",
 });
 
-var Folder = Filer
-    .InfoFolder(Item => Item.AddPath("Github"))
-    .WithMode(FolderModeType.Static);
-
+var RootFolder = Filer.InfoFolder();
+var e = RootFolder.IsRoot;
+var c = RootFolder.Folders.ToArray().FirstOrDefault();
+var D = c.TotalLength;
 while (true)
 {
-    Console.Write($"{Folder?.FolderName}:");
+    Console.Write($"{RootFolder?.FolderName}:");
     var Input = Console.ReadLine();
     switch (Input?.ToLower())
     {
         case "next":
-            var Next = Folder?.NextFolder(PositionByType.Name);
+            var Next = RootFolder?.NextFolder(PositionByType.Name);
             if (Next is null)
                 Console.WriteLine("Next is null");
             else
-                Folder = Next;
+                RootFolder = Next;
             break;
         case "pre":
-            var Previous = Folder?.PreviousFolder(PositionByType.Name);
+            var Previous = RootFolder?.PreviousFolder(PositionByType.Name);
             if (Previous is null)
                 Console.WriteLine("Previous is null");
             else
-                Folder = Previous;
+                RootFolder = Previous;
             break;
         case "print":
-            Console.WriteLine(Folder?.FolderName);
+            Console.WriteLine(RootFolder?.FolderName);
             break;
         case "back":
-            var Back = Folder?.ParentFolder;
-            Folder = Back;
+            var Back = RootFolder?.ParentFolder;
+            RootFolder = Back;
             break;
         case "in":
-            var First = Folder?.Folders.FirstOrDefault();
+            var First = RootFolder?.Folders.FirstOrDefault();
             if (First is null)
                 Console.WriteLine("Folders is empty");
             else
-                Folder = First;
+                RootFolder = First;
             break;
         case "length":
-            var Length = Folder?.TotalLength;
+            var Length = RootFolder?.TotalLength;
             Console.WriteLine(Length);
             break;
         default:

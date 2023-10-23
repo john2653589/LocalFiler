@@ -233,7 +233,7 @@ namespace Rugal.LocalFiler.Service
         }
         public virtual FolderInfo InfoFolder()
         {
-            var Config = new PathConfig().AddPath("/");
+            var Config = new PathConfig();
             var Result = new FolderInfo(this, Config);
             return Result;
         }
