@@ -46,7 +46,7 @@ namespace Rugal.LocalFiler.Extention
             var GetSetting = Configuration.GetSection("LocalFiler");
             _ = bool.TryParse(GetSetting["DefaultExtensionFromFile"], out var DefaultExtensionFromFile);
             _ = bool.TryParse(GetSetting["UseExtension"], out var UseExtension);
-            
+
             var Setting = new FilerSetting()
             {
                 RootPath = GetSetting["RootPath"],

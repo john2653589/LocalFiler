@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Rugal.LocalFiler.Api.LocalFiler.Api.Model
+﻿namespace Rugal.LocalFiler.Api.LocalFiler.Api.Model
 {
     public class SyncDirectoryModel
     {
