@@ -16,14 +16,17 @@ var RootFolder = Filer.InfoFolder(Item => Item
     .AddPath("B")
     .AddPath("D"));
 
-var FindFolder = Filer.RCS_FindToFolder(RootFolder, Item => Item
+var FindFile = Filer.RCS_FindToFile(RootFolder, Item => Item
     .AddPath("app")
     .AddPath("wwwroot")
     .AddPath("MainRootFiles")
     .AddPath("isrp")
+    .AddPath("staff")
+    .AddPath("RescuerImage")
+    .WithFileName("E08B09B1F84B46C183CB0635E35EDCD2.JPG")
     );
 
-RootFolder = FindFolder;
+RootFolder = FindFile.Folder;
 
 while (true)
 {

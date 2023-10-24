@@ -370,7 +370,6 @@ namespace Rugal.LocalFiler.Service
                 }
             }
 
-
             if (IsDiff)
                 return RCS_FindToFolder(RootFolder.ParentFolder, ConfigFunc);
 
@@ -387,6 +386,20 @@ namespace Rugal.LocalFiler.Service
                 return null;
 
             return RCS_FindToFolder(FindFolder, ConfigFunc);
+        }
+        public FilerInfo RCS_FindToFile(FolderInfo RootFolder, Action<ReadConfig> ConfigFunc)
+        {
+            var Config = new ReadConfig();
+            ConfigFunc.Invoke(Config);
+
+            var FindFolder = RCS_FindToFolder(RootFolder, Item => Item.AddPath(Config.Paths));
+            if (FindFolder is null)
+                return null;
+
+            var FindFile = FindFolder.Files
+                .FirstOrDefault(Item => Item.FileName == Config.FileName);
+
+            return FindFile;
         }
         #endregion
 
