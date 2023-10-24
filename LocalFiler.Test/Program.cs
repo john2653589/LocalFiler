@@ -4,13 +4,13 @@ using Rugal.LocalFiler.Service;
 
 var Filer = new FilerService(new FilerSetting()
 {
-    RootPath = @"D:/Development",
+    //RootPath = @"D:/Development",
+    RootPath = "D:\\Development\\R"
 });
 
-var RootFolder = Filer.InfoFolder();
-var e = RootFolder.IsRoot;
-var c = RootFolder.Folders.ToArray().FirstOrDefault();
-var D = c.TotalLength;
+var RootFolder = Filer.InfoFolder().WithSort(SortByType.Name);
+var GetFile = RootFolder.Files.First();
+
 while (true)
 {
     Console.Write($"{RootFolder?.FolderName}:");
@@ -18,14 +18,16 @@ while (true)
     switch (Input?.ToLower())
     {
         case "next":
-            var Next = RootFolder?.NextFolder(PositionByType.Name);
+            //var Next = RootFolder?.NextFolder();
+            var Next = Filer.RCS_ToNextFolder(RootFolder);
+
             if (Next is null)
                 Console.WriteLine("Next is null");
             else
                 RootFolder = Next;
             break;
         case "pre":
-            var Previous = RootFolder?.PreviousFolder(PositionByType.Name);
+            var Previous = RootFolder?.PreviousFolder();
             if (Previous is null)
                 Console.WriteLine("Previous is null");
             else
@@ -51,6 +53,6 @@ while (true)
             break;
         default:
             break;
+
     }
 }
-

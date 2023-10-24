@@ -293,6 +293,58 @@ namespace Rugal.LocalFiler.Service
 
         #endregion
 
+        #region File Or Folder Visit
+        public FilerInfo RCS_ToNextFile(FilerInfo File, SortByType SortBy = SortByType.Nono)
+        {
+            var NextFile = File
+                .WithSort(SortBy)
+                .NextFile();
+
+            if (NextFile is not null)
+                return NextFile;
+
+            var Folder = File.Folder;
+            while (NextFile is null)
+            {
+                Folder = RCS_ToNextFolder(Folder, SortBy);
+                if (Folder is null)
+                    return null;
+
+                NextFile = Folder
+                    .WithSort(SortBy).Files
+                    .FirstOrDefault();
+            }
+            return NextFile;
+        }
+
+        public FolderInfo RCS_ToNextFolder(FolderInfo Folder, SortByType SortBy = SortByType.Nono, bool IsSearchUnder = true)
+        {
+            if (IsSearchUnder)
+            {
+                var UnderFolder = Folder
+                    .WithSort(SortBy).Folders
+                    .FirstOrDefault();
+
+                if (UnderFolder is not null)
+                    return UnderFolder;
+            }
+
+            if (Folder.IsRoot)
+                return null;
+
+            var NextFolder = Folder
+                .WithSort(SortBy)
+                .NextFolder();
+
+            if (NextFolder is not null)
+                return NextFolder;
+
+            return RCS_ToNextFolder(Folder.ParentFolder, SortBy, false);
+        }
+
+
+        #endregion
+
         #endregion
 
         #region Convert File Name And Root File Name

@@ -2,51 +2,117 @@
 
 namespace Rugal.LocalFiler.Model
 {
-    public class FilerInfo
+    public class BaseInfo
     {
-        private readonly Lazy<FolderInfo> _Folder;
         public readonly FilerService Filer;
+        public SortByType SortBy { get; set; } = SortByType.Length;
+        public static IEnumerable<FolderInfo> SortFolders(IEnumerable<FolderInfo> Folders, SortByType SortBy)
+        {
+            Folders = SortBy switch
+            {
+                SortByType.Length => Folders
+                    .OrderBy(Item => Item.TotalLength)
+                    .ThenBy(Item => Item.FolderName),
+                SortByType.Name => Folders
+                    .OrderBy(Item => Item.FolderName),
+                _ => Folders,
+            };
+
+            return Folders;
+        }
+        public static IEnumerable<FilerInfo> SortFiles(IEnumerable<FilerInfo> Files, SortByType SortBy)
+        {
+            Files = SortBy switch
+            {
+                SortByType.Length => Files
+                    .OrderBy(Item => Item.Length)
+                    .ThenBy(Item => Item.FileName),
+                SortByType.Name => Files.OrderBy(Item => Item.FileName),
+                _ => Files,
+            };
+
+            return Files;
+        }
+        public BaseInfo(FilerService _Filer)
+        {
+            Filer = _Filer;
+        }
+    }
+    public class FilerInfo : BaseInfo
+    {
+        #region Lazy Property
+        private readonly Lazy<FolderInfo> _Folder;
+        #endregion
+
+        #region Private Property
+        private FolderInfo UpperSetFolder;
+        #endregion
+
+        #region Public Property
         public ReadConfig Config { get; set; }
         public FileInfo BaseInfo { get; set; }
         public FolderInfo Folder => _Folder.Value;
         public string FileName => BaseInfo.Name;
         public bool IsExist => BaseInfo.Exists;
         public long Length => IsExist ? BaseInfo.Length : -1;
-        public FilerInfo(FilerService _Filer, ReadConfig _Config, bool IsVerifyFileName)
+        #endregion
+
+        #region Constructor
+        public FilerInfo(FilerService _Filer, ReadConfig _Config, bool IsVerifyFileName) : base(_Filer)
         {
             Config = _Config;
-            Filer = _Filer;
 
             var FullFileName = Filer.CombineRootFileName(Config, IsVerifyFileName);
             BaseInfo = new FileInfo(FullFileName);
             _Folder = new Lazy<FolderInfo>(() => GetFolder());
         }
         public FilerInfo(FilerService _Filer, ReadConfig _Config) : this(_Filer, _Config, false) { }
+        #endregion
 
-
-        public FilerInfo NextFile(PositionByType NextBy)
+        #region With Method
+        public FilerInfo WithSort(SortByType _SortBy)
         {
+            if (_SortBy == SortByType.Nono)
+                return this;
+            SortBy = _SortBy;
+            return this;
+        }
+        public FilerInfo WithFolder(FolderInfo _UpperSetFolder)
+        {
+            UpperSetFolder = _UpperSetFolder;
+            return this;
+        }
+        #endregion
+
+        #region Public Method
+        public FilerInfo NextFile(SortByType NextBy = SortByType.Nono)
+        {
+            if (NextBy == SortByType.Nono)
+                NextBy = SortBy;
+
             var Result = NextBy switch
             {
-                PositionByType.Length => NextFileByLength(),
-                PositionByType.Name => NextFileByName(),
+                SortByType.Length => NextFileByLength(),
+                SortByType.Name => NextFileByName(),
                 _ => null
             };
             return Result;
         }
-        public FilerInfo PreviousFile(PositionByType PreviousBy)
+        public FilerInfo PreviousFile(SortByType PreviousBy)
         {
             var Result = PreviousBy switch
             {
-                PositionByType.Length => PreviousByLength(),
-                PositionByType.Name => PreviousByName(),
+                SortByType.Length => PreviousByLength(),
+                SortByType.Name => PreviousByName(),
                 _ => null
             };
             return Result;
         }
         public FilerInfo Clone()
         {
-            var NewInfo = new FilerInfo(Filer, Config.Clone());
+            var NewInfo = new FilerInfo(Filer, Config.Clone())
+                .WithSort(SortBy)
+                .WithFolder(Folder);
             return NewInfo;
         }
         public FilerWriter ToWriter()
@@ -54,10 +120,14 @@ namespace Rugal.LocalFiler.Model
             var Writer = new FilerWriter(this);
             return Writer;
         }
+        #endregion
 
         #region Public Process
-        public int IndexOfBy(IEnumerable<FilerInfo> Files, PositionByType PositionBy = PositionByType.Name)
+        public int IndexOfBy(IEnumerable<FilerInfo> Files, SortByType IndexSortBy = SortByType.Nono)
         {
+            if (IndexSortBy == SortByType.Nono)
+                IndexSortBy = SortBy;
+
             var FindFile = Files
                 .Select((Item, Index) => new
                 {
@@ -66,10 +136,10 @@ namespace Rugal.LocalFiler.Model
                 })
                 .FirstOrDefault(Item =>
                 {
-                    var IsFind = PositionBy switch
+                    var IsFind = IndexSortBy switch
                     {
-                        PositionByType.Name => Item.Info.FileName == FileName,
-                        PositionByType.Length => Item.Info.Length == Length,
+                        SortByType.Name => Item.Info.FileName == FileName,
+                        SortByType.Length => Item.Info.Length == Length,
                         _ => false
                     };
                     return IsFind;
@@ -85,7 +155,11 @@ namespace Rugal.LocalFiler.Model
         #region Private Process
         private FolderInfo GetFolder()
         {
-            var Result = new FolderInfo(Filer, Config);
+            if (UpperSetFolder is not null)
+                return UpperSetFolder;
+
+            var Result = new FolderInfo(Filer, Config)
+                .WithSort(SortBy);
             return Result;
         }
         private FilerInfo NextFileByLength()
@@ -93,6 +167,7 @@ namespace Rugal.LocalFiler.Model
             var Result = Folder.Files
                 .Where(Item => Item.Length > Length)
                 .OrderBy(Item => Item.Length)
+                    .ThenBy(Item => Item.FileName)
                 .FirstOrDefault();
             return Result;
         }
@@ -116,6 +191,7 @@ namespace Rugal.LocalFiler.Model
             var Result = Folder.Files
                 .Where(Item => Item.Length < Length)
                 .OrderBy(Item => Item.Length)
+                    .ThenBy(Item => Item.FileName)
                 .LastOrDefault();
             return Result;
         }
@@ -136,7 +212,7 @@ namespace Rugal.LocalFiler.Model
         }
         #endregion
     }
-    public class FolderInfo
+    public class FolderInfo : BaseInfo
     {
         #region Lazy Property
         private readonly Lazy<IEnumerable<FilerInfo>> _Files;
@@ -144,20 +220,30 @@ namespace Rugal.LocalFiler.Model
         private readonly Lazy<FolderInfo> _ParentFolder;
         private readonly Lazy<long> _TotalLength;
         #endregion
-        public readonly FilerService Filer;
-        public readonly PathConfig Config;
+
+        #region Private Property
+        private FolderInfo UpperSetParentFolder;
+        #endregion
+
+        #region Public ReadOnly Property
         public readonly DirectoryInfo Info;
+        public readonly PathConfig Config;
+        #endregion
+
+        #region Public Property
         public bool IsRoot => !Config.Paths.Any();
         public FolderInfo ParentFolder => _ParentFolder.Value;
         public string FolderName => Info.Name;
         public IEnumerable<FilerInfo> Files => _Files.Value;
         public IEnumerable<FolderInfo> Folders => _Folders.Value;
         public long TotalLength => _TotalLength.Value;
-        public FolderModeType FolderMode { get; set; } = FolderModeType.Dynamic;
-        public FolderInfo(FilerService _Filer, PathConfig _Config)
+        public FolderModeType FolderMode { get; set; } = FolderModeType.Static;
+        #endregion
+
+        #region Constructor
+        public FolderInfo(FilerService _Filer, PathConfig _Config) : base(_Filer)
         {
             Config = _Config;
-            Filer = _Filer;
 
             var FullPath = Filer.CombineRootPaths(Config);
             Info = new DirectoryInfo(FullPath);
@@ -167,30 +253,24 @@ namespace Rugal.LocalFiler.Model
             _ParentFolder = new Lazy<FolderInfo>(() => GetParentFolder());
             _TotalLength = new Lazy<long>(() => GetTotalLength());
         }
-        public FolderInfo NextFolder(PositionByType NextBy)
+        #endregion
+
+        #region Public Method
+        public FolderInfo NextFolder(SortByType NextBy = SortByType.Nono)
         {
-            var Result = NextBy switch
-            {
-                PositionByType.Length => NextFolderByLength(),
-                PositionByType.Name => NextFolderByName(),
-                _ => null
-            };
+            if (NextBy == SortByType.Nono)
+                NextBy = SortBy;
+
+            var Result = NextFolderBy(NextBy);
             return Result;
         }
-        public FolderInfo PreviousFolder(PositionByType PreviousBy)
+        public FolderInfo PreviousFolder(SortByType PreviousBy = SortByType.Nono)
         {
-            var Result = PreviousBy switch
-            {
-                PositionByType.Length => PreviousByLength(),
-                PositionByType.Name => PreviousByName(),
-                _ => null
-            };
+            if (PreviousBy == SortByType.Nono)
+                PreviousBy = SortBy;
+
+            var Result = PreviousFolderBy(PreviousBy);
             return Result;
-        }
-        public FolderInfo WithMode(FolderModeType _FolderMode)
-        {
-            FolderMode = _FolderMode;
-            return this;
         }
         public FilerInfo InfoFile(string FileName)
         {
@@ -198,50 +278,129 @@ namespace Rugal.LocalFiler.Model
                 .WithConfig(Config)
                 .WithFileName(FileName);
 
-            var NewInfo = new FilerInfo(Filer, FileConfig);
+            var NewInfo = new FilerInfo(Filer, FileConfig)
+                .WithSort(SortBy)
+                .WithFolder(this);
             return NewInfo;
         }
-        private IEnumerable<FilerInfo> GetFiles()
-        {
-            var Files = Info.GetFiles()
-                .Select(FileInfo =>
-                {
-                    var FileConfig = new ReadConfig()
-                        .WithConfig(Config)
-                        .WithFileName(FileInfo.Name);
+        #endregion
 
-                    var GetInfo = new FilerInfo(Filer, FileConfig);
-                    return GetInfo;
+        #region With Method
+        public FolderInfo WithMode(FolderModeType _FolderMode)
+        {
+            FolderMode = _FolderMode;
+            return this;
+        }
+        public FolderInfo WithSort(SortByType _SortBy)
+        {
+            if (_SortBy == SortByType.Nono)
+                return this;
+
+            SortBy = _SortBy;
+            return this;
+        }
+        public FolderInfo WithParentFolder(FolderInfo _UpperSetParentFolder)
+        {
+            UpperSetParentFolder = _UpperSetParentFolder;
+            return this;
+        }
+        #endregion
+
+        #region Public Process
+        public int IndexOfBy(IEnumerable<FolderInfo> Folders, SortByType IndexSortBy = SortByType.Nono)
+        {
+            if (IndexSortBy == SortByType.Nono)
+                IndexSortBy = SortBy;
+
+            var FindFolder = Folders
+                .Select((Item, Index) => new
+                {
+                    Info = Item,
+                    Index
+                })
+                .FirstOrDefault(Item =>
+                {
+                    var IsFind = IndexSortBy switch
+                    {
+                        SortByType.Name => Item.Info.FolderName == FolderName,
+                        SortByType.Length => Item.Info.TotalLength == TotalLength,
+                        _ => false
+                    };
+                    return IsFind;
                 });
 
-            if (FolderMode == FolderModeType.Static)
+            if (FindFolder is null)
+                return -1;
+
+            return FindFolder.Index;
+        }
+        #endregion
+
+        #region Private Process
+        private IEnumerable<FilerInfo> GetFiles()
+        {
+            try
             {
-                Files = Files.ToArray();
+                var Files = Info.GetFiles()
+                    .Select(FileInfo =>
+                    {
+                        var FileConfig = new ReadConfig()
+                            .WithConfig(Config)
+                            .WithFileName(FileInfo.Name);
+
+                        var GetInfo = new FilerInfo(Filer, FileConfig)
+                            .WithSort(SortBy)
+                            .WithFolder(this);
+                        return GetInfo;
+                    });
+
+                Files = SortFiles(Files, SortBy);
+                if (FolderMode == FolderModeType.Static)
+                {
+                    Files = Files.ToArray();
+                    return Files;
+                }
+
                 return Files;
             }
-
-            return Files;
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine($"{Info.FullName} access not allowed");
+                return Array.Empty<FilerInfo>();
+            }
         }
         private IEnumerable<FolderInfo> GetFolders()
         {
-            var Folders = Info.EnumerateDirectories()
-                .Select(FolderInfo =>
-                {
-                    var FolderConfig = new PathConfig()
-                        .AddPath(Config.Paths)
-                        .AddPath(FolderInfo.Name);
-
-                    var GetInfo = new FolderInfo(Filer, FolderConfig);
-                    return GetInfo;
-                });
-
-            if (FolderMode == FolderModeType.Static)
+            try
             {
-                Folders = Folders.ToArray();
+                var Folders = Info
+                    .EnumerateDirectories()
+                    .Select(FolderInfo =>
+                    {
+                        var FolderConfig = new PathConfig()
+                            .AddPath(Config.Paths)
+                            .AddPath(FolderInfo.Name);
+
+                        var GetInfo = new FolderInfo(Filer, FolderConfig)
+                            .WithSort(SortBy)
+                            .WithParentFolder(this);
+                        return GetInfo;
+                    });
+
+                Folders = SortFolders(Folders, SortBy);
+                if (FolderMode == FolderModeType.Static)
+                {
+                    Folders = Folders.ToArray();
+                    return Folders;
+                }
+
                 return Folders;
             }
-
-            return Folders;
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine($"{Info.FullName} access not allowed");
+                return Array.Empty<FolderInfo>();
+            }
         }
         private long GetTotalLength()
         {
@@ -252,27 +411,27 @@ namespace Rugal.LocalFiler.Model
         }
         private FolderInfo GetParentFolder()
         {
+            if (IsRoot)
+                return null;
+
+            if (UpperSetParentFolder is not null)
+                return UpperSetParentFolder;
+
             var FolderConfig = new PathConfig()
                 .AddPath(Config.Paths)
                 .SkipLast();
 
-            var Result = new FolderInfo(Filer, FolderConfig);
+            var Result = new FolderInfo(Filer, FolderConfig)
+                .WithSort(SortBy);
             return Result;
         }
-        private FolderInfo NextFolderByLength()
+        private FolderInfo NextFolderBy(SortByType SortBy)
         {
-            var Result = ParentFolder.Folders
-                .Where(Item => Item.TotalLength > TotalLength)
-                .OrderBy(Item => Item.TotalLength)
-                .FirstOrDefault();
-            return Result;
-        }
-        private FolderInfo NextFolderByName()
-        {
-            var Folders = ParentFolder.Folders
-                .OrderBy(Item => Item.FolderName);
+            if (ParentFolder is null)
+                return null;
 
-            var Index = IndexOfBy(Folders);
+            var Folders = SortFolders(ParentFolder.Folders, SortBy);
+            var Index = IndexOfBy(Folders, SortBy);
             Index++;
 
             if (Index >= Folders.Count())
@@ -284,20 +443,13 @@ namespace Rugal.LocalFiler.Model
 
             return Result;
         }
-        private FolderInfo PreviousByLength()
+        private FolderInfo PreviousFolderBy(SortByType SortBy)
         {
-            var Result = ParentFolder.Folders
-                .Where(Item => Item.TotalLength < TotalLength)
-                .OrderBy(Item => Item.TotalLength)
-                .LastOrDefault();
-            return Result;
-        }
-        private FolderInfo PreviousByName()
-        {
-            var Folders = ParentFolder.Folders
-                .OrderBy(Item => Item.FolderName);
+            if (ParentFolder is null)
+                return null;
 
-            var Index = IndexOfBy(Folders);
+            var Folders = SortFolders(ParentFolder.Folders, SortBy);
+            var Index = IndexOfBy(Folders, SortBy);
             Index--;
 
             if (Index < 0)
@@ -308,33 +460,11 @@ namespace Rugal.LocalFiler.Model
                 .First();
             return Result;
         }
-        public int IndexOfBy(IEnumerable<FolderInfo> Folders, PositionByType PositionBy = PositionByType.Name)
-        {
-            var FindFolder = Folders
-                .Select((Item, Index) => new
-                {
-                    Info = Item,
-                    Index
-                })
-                .FirstOrDefault(Item =>
-                {
-                    var IsFind = PositionBy switch
-                    {
-                        PositionByType.Name => Item.Info.FolderName == FolderName,
-                        PositionByType.Length => Item.Info.TotalLength == TotalLength,
-                        _ => false
-                    };
-                    return IsFind;
-                });
-
-            if (FindFolder is null)
-                return -1;
-
-            return FindFolder.Index;
-        }
+        #endregion
     }
-    public enum PositionByType
+    public enum SortByType
     {
+        Nono,
         Name,
         Length,
     }
