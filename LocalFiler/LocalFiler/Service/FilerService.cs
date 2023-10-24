@@ -31,6 +31,12 @@ namespace Rugal.LocalFiler.Service
         #region File Save
         private string LocalSave(SaveConfig Config)
         {
+            if(!string.IsNullOrWhiteSpace(Setting.SaveFileNameReplace))
+            {
+                var RegexFileName = Regex.Replace(Config.FileName, Setting.SaveFileNameReplace, "");
+                Config.WithFileName(RegexFileName);
+            }
+
             var FullFileName = ProcessFileNameExtension(Config, out var SetFileName);
             if (Config.SaveBy == SaveByType.FormFile)
             {
@@ -219,9 +225,7 @@ namespace Rugal.LocalFiler.Service
             if (Config.FileName is null)
                 throw new Exception("file name can not be null");
 
-            var FullFileName = CombineRootFileName(Config);
             var Result = new FilerInfo(this, Config);
-
             return Result;
         }
         public virtual FilerInfo InfoFile(Action<ReadConfig> ConfigFunc)
@@ -294,16 +298,18 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Or Folder Visit
-        public FilerInfo RCS_ToNextFile(FilerInfo File, SortByType SortBy = SortByType.Nono)
+        public FilerInfo RCS_ToNextFile(FilerInfo File = null, SortByType SortBy = SortByType.Nono)
         {
-            var NextFile = File
-                .WithSort(SortBy)
+            var NextFile = File?
+                .WithSort(SortBy)?
                 .NextFile();
 
             if (NextFile is not null)
                 return NextFile;
 
-            var Folder = File.Folder;
+            var Folder = File?.Folder;
+            Folder ??= InfoFolder().WithSort(SortBy);
+
             while (NextFile is null)
             {
                 Folder = RCS_ToNextFolder(Folder, SortBy);
@@ -418,16 +424,15 @@ namespace Rugal.LocalFiler.Service
             if (FileName is null)
                 return null;
 
-            var SetFileName = FileName.Replace("-", "");
-            SetFileName = Setting.FileNameCase switch
+            FileName = Setting.FileNameCase switch
             {
-                FileNameCaseType.None => SetFileName,
-                FileNameCaseType.Upper => SetFileName.ToUpper(),
-                FileNameCaseType.Lower => SetFileName.ToLower(),
-                _ => SetFileName,
+                FileNameCaseType.None => FileName,
+                FileNameCaseType.Upper => FileName.ToUpper(),
+                FileNameCaseType.Lower => FileName.ToLower(),
+                _ => FileName,
             };
 
-            return SetFileName;
+            return FileName;
         }
         private static string ConvertExtension(string Extension)
         {

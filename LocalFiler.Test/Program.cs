@@ -5,14 +5,14 @@ using Rugal.LocalFiler.Service;
 var Filer = new FilerService(new FilerSetting()
 {
     //RootPath = @"D:/Development",
-    RootPath = "C:/"
+    RootPath = "D:/TestImage"
 });
 
-var RootFolder = Filer
-    .InfoFolder()
-    .WithSort(SortByType.Length);
 
-var F = RootFolder.Folders.FirstOrDefault();
+
+var RootFolder = Filer.InfoFolder();
+var F = RootFolder.Files;
+var L = RootFolder.TotalLength;
 
 while (true)
 {
