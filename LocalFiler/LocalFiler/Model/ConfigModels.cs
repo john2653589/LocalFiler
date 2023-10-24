@@ -5,6 +5,7 @@ namespace Rugal.LocalFiler.Model
     public class PathConfig
     {
         public IEnumerable<string> Paths { get; set; }
+        public string FullPaths => GetFullPath();
         public PathConfig()
         {
             Paths = new List<string>();
@@ -51,6 +52,11 @@ namespace Rugal.LocalFiler.Model
                 .AddPath(Paths);
             return NewConfig;
         }
+        public virtual string GetFullPath()
+        {
+            var Result = string.Join("/", Paths);
+            return Result;
+        }
         private static string ClearPath(string Path)
         {
             while (Path.Contains(@"//"))
@@ -65,6 +71,7 @@ namespace Rugal.LocalFiler.Model
     public class ReadConfig : PathConfig
     {
         public string FileName { get; set; }
+        public string FullFileName => GetFullFileName();
         public ReadConfig() { }
         public ReadConfig(object _FileName)
         {
@@ -101,6 +108,13 @@ namespace Rugal.LocalFiler.Model
         {
             base.AddPath(Paths);
             return this;
+        }
+        public virtual string GetFullFileName()
+        {
+            var JoinPaths = Paths.ToList();
+            JoinPaths.Add(FileName);
+            var Result = string.Join("/", JoinPaths);
+            return Result;
         }
     }
     public class SaveConfig : ReadConfig
