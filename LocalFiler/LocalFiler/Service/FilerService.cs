@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Rugal.LocalFiler.Model;
+using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
 namespace Rugal.LocalFiler.Service
@@ -31,7 +32,7 @@ namespace Rugal.LocalFiler.Service
         #region File Save
         private string LocalSave(SaveConfig Config)
         {
-            if(!string.IsNullOrWhiteSpace(Setting.SaveFileNameReplace))
+            if (!string.IsNullOrWhiteSpace(Setting.SaveFileNameReplace))
             {
                 var RegexFileName = Regex.Replace(Config.FileName, Setting.SaveFileNameReplace, "");
                 Config.WithFileName(RegexFileName);
@@ -345,6 +346,47 @@ namespace Rugal.LocalFiler.Service
                 return NextFolder;
 
             return RCS_ToNextFolder(Folder.ParentFolder, SortBy, false);
+        }
+        public FolderInfo RCS_FindToFolder(FolderInfo RootFolder, Action<PathConfig> ConfigFunc)
+        {
+            var TargetConfig = new PathConfig();
+            ConfigFunc.Invoke(TargetConfig);
+            var TargetPaths = TargetConfig.Paths.ToList();
+            var SourcePaths = RootFolder.Config.Paths.ToList();
+
+            if (SourcePaths.Count > TargetPaths.Count)
+                return RCS_FindToFolder(RootFolder.ParentFolder, ConfigFunc);
+
+            var IsEqualsCount = TargetPaths.Count == SourcePaths.Count;
+            var IsDiff = false;
+            for (var i = 0; i < SourcePaths.Count; i++)
+            {
+                var Target = TargetPaths[i];
+                var Source = SourcePaths[i];
+                if (Target != Source)
+                {
+                    IsDiff = true;
+                    break;
+                }
+            }
+
+
+            if (IsDiff)
+                return RCS_FindToFolder(RootFolder.ParentFolder, ConfigFunc);
+
+            if (IsEqualsCount)
+                return RootFolder;
+
+            var FindIndex = SourcePaths.Count;
+            var FindPath = TargetPaths[FindIndex];
+
+            var FindFolder = RootFolder.Folders
+                .FirstOrDefault(Item => Item.Config.Paths.Last() == FindPath);
+
+            if (FindFolder is null)
+                return null;
+
+            return RCS_FindToFolder(FindFolder, ConfigFunc);
         }
         #endregion
 

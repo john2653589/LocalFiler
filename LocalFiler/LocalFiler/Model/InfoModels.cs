@@ -199,8 +199,9 @@ namespace Rugal.LocalFiler.Model
 
         #region Public Property
         public bool IsRoot => !Config.Paths.Any();
-        public FolderInfo ParentFolder => _ParentFolder.Value;
         public string FolderName => Info.Name;
+        public bool IsExist => Info.Exists;
+        public FolderInfo ParentFolder => _ParentFolder.Value;
         public IEnumerable<FilerInfo> Files => _Files.Value;
         public IEnumerable<FolderInfo> Folders => _Folders.Value;
         public long TotalLength => _TotalLength.Value;
@@ -299,6 +300,9 @@ namespace Rugal.LocalFiler.Model
         {
             try
             {
+                if (!Info.Exists)
+                    return Array.Empty<FilerInfo>();
+
                 var Files = Info.GetFiles()
                     .Select(FileInfo =>
                     {
@@ -331,6 +335,9 @@ namespace Rugal.LocalFiler.Model
         {
             try
             {
+                if (!Info.Exists)
+                    return Array.Empty<FolderInfo>();
+
                 var Folders = Info
                     .EnumerateDirectories()
                     .Select(FolderInfo =>

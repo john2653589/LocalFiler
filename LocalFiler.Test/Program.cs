@@ -5,14 +5,25 @@ using Rugal.LocalFiler.Service;
 var Filer = new FilerService(new FilerSetting()
 {
     //RootPath = @"D:/Development",
-    RootPath = "D:/TestImage"
+    RootPath = "D:/"
 });
 
 
+var RootFolder = Filer.InfoFolder(Item => Item
+    .AddPath("Development")
+    .AddPath("R")
+    .AddPath("A")
+    .AddPath("B")
+    .AddPath("D"));
 
-var RootFolder = Filer.InfoFolder();
-var F = RootFolder.Files;
-var L = RootFolder.TotalLength;
+var FindFolder = Filer.RCS_FindToFolder(RootFolder, Item => Item
+    .AddPath("app")
+    .AddPath("wwwroot")
+    .AddPath("MainRootFiles")
+    .AddPath("isrp")
+    );
+
+RootFolder = FindFolder;
 
 while (true)
 {
@@ -21,8 +32,8 @@ while (true)
     switch (Input?.ToLower())
     {
         case "next":
-            //var Next = RootFolder?.NextFolder();
-            var Next = Filer.RCS_ToNextFolder(RootFolder);
+            var Next = RootFolder?.NextFolder();
+            //var Next = Filer.RCS_ToNextFolder(RootFolder);
 
             if (Next is null)
                 Console.WriteLine("Next is null");
