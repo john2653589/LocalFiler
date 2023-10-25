@@ -55,6 +55,11 @@ namespace Rugal.LocalFiler.Service
         }
         public async Task<FilerWriter> OpenWriteAsync(Func<FileStream, Task<long>> WriterFunc, long WriteFromLength = 0)
         {
+            var BaseInfo = Info.BaseInfo;
+            var Directory = BaseInfo.Directory;
+            if (!Directory.Exists)
+                Directory.Create();
+
             using var FileBuffer = Info.BaseInfo.OpenWrite();
             FileBuffer.Seek(WriteFromLength, SeekOrigin.Begin);
             var WriteLength = await WriterFunc(FileBuffer);
