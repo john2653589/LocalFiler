@@ -14,7 +14,7 @@ namespace Rugal.LocalFiler.Service
             if (!Info.BaseInfo.Exists)
                 return this;
 
-            using var FileBuffer = Info.BaseInfo.OpenWrite();
+            using var FileBuffer = Info.BaseInfo.OpenRead();
             FileBuffer.Seek(ReadFromLength, SeekOrigin.Begin);
 
             var ReadByteLength = KbPerRead * 1024;
