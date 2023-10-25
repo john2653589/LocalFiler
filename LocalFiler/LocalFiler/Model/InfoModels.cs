@@ -119,9 +119,19 @@ namespace Rugal.LocalFiler.Model
             var TempInfo = Filer.WithTempInfo(this, TempExtension);
             return TempInfo;
         }
+        public FilerInfo RemoveTempInfo(string TepmExtension = null)
+        {
+            var Result = Filer.RemoveTempInfo(this, TepmExtension);
+            return Result;
+        }
+        public FilerInfo RemoveTempFile(string TepmExtension = null)
+        {
+            var Reuslt = Filer.RemoveTempFile(this, TepmExtension);
+            return Reuslt;
+        }
         public bool HasTemp(string TempExtension = null)
         {
-            var TempInfo = ToTemp(TempExtension);   
+            var TempInfo = ToTemp(TempExtension);
             return TempInfo.IsExist;
         }
         #endregion
