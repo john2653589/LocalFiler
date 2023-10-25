@@ -358,13 +358,15 @@ namespace Rugal.LocalFiler.Service
 
             while (NextFile is null)
             {
+                NextFile = Folder.Files
+                  .FirstOrDefault();
+
+                if (NextFile is not null)
+                    return NextFile;
+
                 Folder = RCS_ToNextFolder(Folder, SortBy);
                 if (Folder is null)
                     return null;
-
-                NextFile = Folder
-                    .WithSort(SortBy).Files
-                    .FirstOrDefault();
             }
             return NextFile;
         }
