@@ -91,6 +91,12 @@ namespace Rugal.LocalFiler.Model
             base.WithConfig(Config);
             return this;
         }
+        public ReadConfig WithConfig(ReadConfig Config)
+        {
+            base.WithConfig(Config);
+            FileName = Config.FileName;
+            return this;
+        }
         public override ReadConfig Clone()
         {
             var NewConfig = new ReadConfig()
