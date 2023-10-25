@@ -53,6 +53,7 @@ namespace Rugal.LocalFiler.Model
         public FileInfo BaseInfo { get; set; }
         public FolderInfo Folder => _Folder.Value;
         public string FileName => BaseInfo.Name;
+        public string Extension => BaseInfo.Extension;
         public bool IsExist => BaseInfo.Exists;
         public long Length => IsExist ? BaseInfo.Length : -1;
         #endregion
@@ -131,8 +132,13 @@ namespace Rugal.LocalFiler.Model
         }
         public bool HasTemp(string TempExtension = null)
         {
-            var TempInfo = ToTemp(TempExtension);
-            return TempInfo.IsExist;
+            var Result = Filer.HasTemp(this, TempExtension);
+            return Result;
+        }
+        public bool IsTemp(string TempExtension = null)
+        {
+            var Result = Filer.IsTemp(this, TempExtension);
+            return Result;
         }
         #endregion
 

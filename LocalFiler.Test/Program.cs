@@ -8,8 +8,13 @@ var Filer = new FilerService(new FilerSetting()
     RootPath = "D:/"
 });
 
-
 var RootFolder = Filer.InfoFolder();
+_ = RootFolder.TotalLength;
+
+var GetFile = Filer.RCS_FindToFile(RootFolder, Item => Item
+    .AddPath("TestImage")
+    .WithFileName("DOG1.jpg.tmp"));
+
 while (true)
 {
     Console.Write($"{RootFolder?.FolderName}:");

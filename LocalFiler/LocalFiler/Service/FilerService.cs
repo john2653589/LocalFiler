@@ -316,9 +316,30 @@ namespace Rugal.LocalFiler.Service
         {
             var NewFolder = ReNameFolderInfo(Folder, NewFolderName);
             var NewFullPath = CombineRootPaths(NewFolder.Config);
+            if (Directory.Exists(NewFullPath))
+            {
+                Console.WriteLine($"Folder {NewFullPath} is exist");
+                return NewFolder;
+            }
+
             Folder.Info.MoveTo(NewFullPath);
             Folder.ParentFolder.ReQueryFolder();
             return NewFolder;
+        }
+        #endregion
+
+        #region Temp File Check
+        public virtual bool IsTemp(FilerInfo File, string TempExtension = null)
+        {
+            var GetExtension = ConvertExtension(TempExtension);
+            if (GetExtension == File.Extension)
+                return true;
+            return false;
+        }
+        public virtual bool HasTemp(FilerInfo File, string TempExtension = null)
+        {
+            var TempInfo = WithTempInfo(File, TempExtension);
+            return TempInfo.IsExist;
         }
         #endregion
 
@@ -463,6 +484,12 @@ namespace Rugal.LocalFiler.Service
             var CombineFileName = $"{ClearFileName}.{Extension.ToLower().TrimStart('.')}";
             return CombineFileName;
         }
+        public virtual string ConvertExtension(string Extension)
+        {
+            Extension ??= Setting.TempExtention;
+            Extension = $".{Extension.Replace(".", "")}";
+            return Extension;
+        }
         #endregion
 
         #region Root Path Process
@@ -513,13 +540,6 @@ namespace Rugal.LocalFiler.Service
 
             return FileName;
         }
-        private string ConvertExtension(string Extension)
-        {
-            Extension ??= Setting.TempExtention;
-            Extension = $".{Extension.Replace(".", "")}";
-            return Extension;
-        }
-
         private string ProcessFileNameExtension(SaveConfig Config, out string SetFileName)
         {
             var FileName = Config.FileName;
