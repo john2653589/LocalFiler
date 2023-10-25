@@ -114,6 +114,11 @@ namespace Rugal.LocalFiler.Model
             var Writer = new FilerWriter(this);
             return Writer;
         }
+        public bool HasTemp(string TempExtension = null)
+        {
+            var TempFile = Filer.WithTempInfo(this, TempExtension);
+            return TempFile.IsExist;
+        }
         #endregion
 
         #region Public Process
@@ -182,10 +187,10 @@ namespace Rugal.LocalFiler.Model
     public class FolderInfo : BaseInfo
     {
         #region Lazy Property
-        private readonly Lazy<IEnumerable<FilerInfo>> _Files;
-        private readonly Lazy<IEnumerable<FolderInfo>> _Folders;
-        private readonly Lazy<FolderInfo> _ParentFolder;
-        private readonly Lazy<long> _TotalLength;
+        protected Lazy<IEnumerable<FilerInfo>> _Files { get; private set; }
+        protected Lazy<long> _TotalLength { get; private set; }
+        protected Lazy<IEnumerable<FolderInfo>> _Folders { get; private set; }
+        protected Lazy<FolderInfo> _ParentFolder { get; private set; }
         #endregion
 
         #region Private Property
@@ -250,6 +255,43 @@ namespace Rugal.LocalFiler.Model
                 .WithSort(SortBy)
                 .WithFolder(this);
             return NewInfo;
+        }
+        public FolderInfo ReQuery()
+        {
+            ReQueryFile(false);
+            ReQueryFolder(false);
+            ReQueryLength();
+            return this;
+        }
+        public FolderInfo ReQueryFile(bool IsRequeryLength = true)
+        {
+            _Files = new Lazy<IEnumerable<FilerInfo>>(GetFiles());
+            _ = _Files.Value;
+
+            if (IsRequeryLength)
+                ReQueryLength();
+            return this;
+        }
+        public FolderInfo ReQueryFolder(bool IsRequeryLength = true)
+        {
+            _Folders = new Lazy<IEnumerable<FolderInfo>>(GetFolders());
+            _ = _Folders.Value;
+
+            if (IsRequeryLength)
+                ReQueryLength();
+            return this;
+        }
+        public FolderInfo ReQueryLength()
+        {
+            var GetFolder = this;
+            while (GetFolder is not null)
+            {
+                GetFolder._TotalLength = new Lazy<long>(GetFolder.GetTotalLength());
+                _ = GetFolder._TotalLength.Value;
+                GetFolder = GetFolder.ParentFolder;
+            }
+
+            return this;
         }
         #endregion
 

@@ -9,25 +9,7 @@ var Filer = new FilerService(new FilerSetting()
 });
 
 
-var RootFolder = Filer.InfoFolder(Item => Item
-    .AddPath("Development")
-    .AddPath("R")
-    .AddPath("A")
-    .AddPath("B")
-    .AddPath("D"));
-
-var FindFile = Filer.RCS_FindToFile(RootFolder, Item => Item
-    .AddPath("app")
-    .AddPath("wwwroot")
-    .AddPath("MainRootFiles")
-    .AddPath("isrp")
-    .AddPath("staff")
-    .AddPath("RescuerImage")
-    .WithFileName("E08B09B1F84B46C183CB0635E35EDCD2.JPG")
-    );
-
-RootFolder = FindFile.Folder;
-
+var RootFolder = Filer.InfoFolder();
 while (true)
 {
     Console.Write($"{RootFolder?.FolderName}:");
@@ -70,6 +52,62 @@ while (true)
         case "length":
             var Length = RootFolder?.TotalLength;
             Console.WriteLine(Length);
+            break;
+        case "files":
+            var Idx = 1;
+            foreach (var File in RootFolder.Files)
+            {
+                Console.WriteLine($"{Idx} - {File.FileName}");
+                Idx++;
+            }
+            break;
+        case "rename-file":
+            Console.Write("Old file name:");
+            var OldFileName = Console.ReadLine();
+            Console.Write("New file name:");
+            var NewFileName = Console.ReadLine();
+            if (OldFileName is null || NewFileName is null)
+                continue;
+            var FindFile = Filer.RCS_FindToFile(RootFolder, Item => Item.WithFileName(OldFileName));
+            if (FindFile is null)
+            {
+                Console.WriteLine($"{OldFileName} is not found");
+                continue;
+            }
+            Filer.ReNameFile(FindFile, NewFileName);
+            Console.WriteLine($"ReName file success to {NewFileName}");
+            break;
+        case "rename-folder":
+            Console.Write("Old folder name:");
+            var OldFolderName = Console.ReadLine();
+            Console.Write("New folder name:");
+            var NewFolderName = Console.ReadLine();
+            if (OldFolderName is null || NewFolderName is null)
+                continue;
+
+            var FindFolder = Filer.RCS_FindToFolder(RootFolder, Item => Item
+                .WithConfig(RootFolder?.Config)
+                .AddPath(OldFolderName));
+
+            if (FindFolder is null)
+            {
+                Console.WriteLine($"{OldFolderName} is not found");
+                continue;
+            }
+            Filer.ReNameFolder(FindFolder, NewFolderName);
+            Console.WriteLine($"ReName folder success to {NewFolderName}");
+            break;
+        case "requery-all":
+            RootFolder?.ReQuery();
+            Console.WriteLine("ReQuery all success");
+            break;
+        case "requery-file":
+            RootFolder?.ReQueryFile();
+            Console.WriteLine("ReQuery file success");
+            break;
+        case "requery-folder":
+            RootFolder?.ReQueryFolder();
+            Console.WriteLine("ReQuery folder success");
             break;
         default:
             break;

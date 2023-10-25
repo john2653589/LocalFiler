@@ -51,6 +51,7 @@ namespace Rugal.LocalFiler.Extention
             {
                 RootPath = GetSetting["RootPath"],
                 SaveFileNameReplace = GetSetting["SaveFileNameReplace"],
+                TempExtention = GetSetting["TempExtention"] ?? "tmp",
                 DefaultExtensionFromFile = DefaultExtensionFromFile,
                 UseExtension = UseExtension,
             };

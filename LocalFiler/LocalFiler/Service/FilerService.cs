@@ -256,45 +256,70 @@ namespace Rugal.LocalFiler.Service
         #endregion
 
         #region File Control
-        public virtual FilerInfo ReNameInfo(FilerInfo Info, string NewFileName)
+        public virtual FilerInfo ReNameInfo(FilerInfo File, string NewFileName)
         {
-            var NewConfig = Info.Config
+            var NewConfig = File.Config
                 .WithFileName(NewFileName);
 
-            var NewInfo = new FilerInfo(this, NewConfig);
+            var NewInfo = new FilerInfo(this, NewConfig)
+                .WithSort(File.SortBy)
+                .WithFolder(File.Folder);
             return NewInfo;
         }
-        public virtual FilerInfo ReNameFile(FilerInfo Info, string NewFileName)
+        public virtual FolderInfo ReNameFolderInfo(FolderInfo Folder, string NewFolderName)
         {
-            var NewFullFileName = CombineRootFileName(NewFileName, Info.Config.Paths);
-            Info.BaseInfo.MoveTo(NewFullFileName, true);
+            if (Folder.IsRoot)
+                throw new Exception("Cant ReName root folder");
 
-            var NewConfig = Info.Config.WithFileName(NewFileName);
-            var NewInfo = new FilerInfo(this, NewConfig);
-            return NewInfo;
+            var NewConfig = Folder.Config
+                .Clone()
+                .SkipLast(1)
+                .AddPath(NewFolderName);
+
+            var NewFolder = new FolderInfo(this, NewConfig)
+                .WithParentFolder(Folder.ParentFolder)
+                .WithMode(Folder.FolderMode)
+                .WithSort(Folder.SortBy);
+
+            return NewFolder;
         }
-        public FilerInfo WithTempInfo(FilerInfo Info, string TempExtension = "tmp")
+        public virtual FilerInfo WithTempInfo(FilerInfo File, string TempExtension = null)
         {
             TempExtension = ConvertExtension(TempExtension);
-            var NewFileName = $"{Info.FileName}{TempExtension}";
-            var TempInfo = ReNameInfo(Info, NewFileName);
+            var NewFileName = $"{File.FileName}{TempExtension}";
+            var TempInfo = ReNameInfo(File, NewFileName);
             return TempInfo;
         }
-        public FilerInfo RemoveTempInfo(FilerInfo Info, string TempExtension = "tmp")
+        public virtual FilerInfo RemoveTempInfo(FilerInfo TempFile, string TempExtension = null)
         {
             TempExtension = ConvertExtension(TempExtension);
-            var NewFileName = Regex.Replace(Info.FileName, $"{TempExtension}$", "");
-            var NewInfo = ReNameInfo(Info, NewFileName);
+            var NewFileName = Regex.Replace(TempFile.FileName, $"{TempExtension}$", "");
+            var NewInfo = ReNameInfo(TempFile, NewFileName);
             return NewInfo;
         }
-        public FilerInfo RemoveTempFile(FilerInfo Info, string TempExtension = "tmp")
+        public virtual FilerInfo RemoveTempFile(FilerInfo TempFile, string TempExtension = null)
         {
             TempExtension = ConvertExtension(TempExtension);
-            var NewFileName = Regex.Replace(Info.FileName, $"{TempExtension}$", "");
-            var NewInfo = ReNameFile(Info, NewFileName);
+            var NewFileName = Regex.Replace(TempFile.FileName, $"{TempExtension}$", "");
+            var NewInfo = ReNameFile(TempFile, NewFileName);
             return NewInfo;
         }
-
+        public virtual FilerInfo ReNameFile(FilerInfo File, string NewFileName)
+        {
+            var NewInfo = ReNameInfo(File, NewFileName);
+            var NewFullFileName = CombineRootFileName(NewFileName, File.Config.Paths);
+            File.BaseInfo.MoveTo(NewFullFileName, true);
+            File.Folder.ReQueryFile();
+            return NewInfo;
+        }
+        public virtual FolderInfo ReNameFolder(FolderInfo Folder, string NewFolderName)
+        {
+            var NewFolder = ReNameFolderInfo(Folder, NewFolderName);
+            var NewFullPath = CombineRootPaths(NewFolder.Config);
+            Folder.Info.MoveTo(NewFullPath);
+            Folder.ParentFolder.ReQueryFolder();
+            return NewFolder;
+        }
         #endregion
 
         #region File Or Folder Visit
@@ -488,8 +513,9 @@ namespace Rugal.LocalFiler.Service
 
             return FileName;
         }
-        private static string ConvertExtension(string Extension)
+        private string ConvertExtension(string Extension)
         {
+            Extension ??= Setting.TempExtention;
             Extension = $".{Extension.Replace(".", "")}";
             return Extension;
         }
