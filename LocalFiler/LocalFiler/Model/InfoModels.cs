@@ -114,10 +114,15 @@ namespace Rugal.LocalFiler.Model
             var Writer = new FilerWriter(this);
             return Writer;
         }
+        public FilerInfo ToTemp(string TempExtension = null)
+        {
+            var TempInfo = Filer.WithTempInfo(this, TempExtension);
+            return TempInfo;
+        }
         public bool HasTemp(string TempExtension = null)
         {
-            var TempFile = Filer.WithTempInfo(this, TempExtension);
-            return TempFile.IsExist;
+            var TempInfo = ToTemp(TempExtension);   
+            return TempInfo.IsExist;
         }
         #endregion
 
