@@ -11,6 +11,15 @@ namespace Rugal.LocalFiler.Service
         }
         public FilerWriter OpenRead(Func<byte[], bool> ReadFunc, long ReadFromLength = 0, long KbPerRead = 1024)
         {
+            _ = OpenReadAsync(Buffer =>
+            {
+                var IsNext = ReadFunc(Buffer);
+                return Task.FromResult(IsNext);
+            }, ReadFromLength, KbPerRead).Result;
+            return this;
+        }
+        public async Task<FilerWriter> OpenReadAsync(Func<byte[], Task<bool>> ReadFunc, long ReadFromLength = 0, long KbPerRead = 1024)
+        {
             if (!Info.BaseInfo.Exists)
                 return this;
 
@@ -29,17 +38,26 @@ namespace Rugal.LocalFiler.Service
                 if (ReadCount == 0)
                     break;
 
-                var IsNext = ReadFunc.Invoke(ReadBuffer);
+                var IsNext = await ReadFunc.Invoke(ReadBuffer);
                 if (!IsNext)
                     break;
             }
             return this;
         }
-        public FilerWriter OpenWrite(Action<FileStream> WriterFunc, long WriteFromLength = 0)
+        public FilerWriter OpenWrite(Func<FileStream, int> WriterFunc, long WriteFromLength = 0)
+        {
+            _ = OpenWriteAsync(FileBuffer =>
+            {
+                var WriteLength = WriterFunc(FileBuffer);
+                return Task.FromResult(WriteLength);
+            }, WriteFromLength).Result;
+            return this;
+        }
+        public async Task<FilerWriter> OpenWriteAsync(Func<FileStream, Task<int>> WriterFunc, long WriteFromLength = 0)
         {
             using var FileBuffer = Info.BaseInfo.OpenWrite();
             FileBuffer.Seek(WriteFromLength, SeekOrigin.Begin);
-            WriterFunc.Invoke(FileBuffer);
+            var WriteLength = await WriterFunc(FileBuffer);
             return this;
         }
     }
