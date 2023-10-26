@@ -46,11 +46,14 @@ namespace Rugal.LocalFiler.Service
         }
         public FilerWriter OpenWrite(Func<FileStream, long> WriterFunc, long WriteFromLength = 0)
         {
-            _ = OpenWriteAsync(FileBuffer =>
-            {
-                var WriteLength = WriterFunc(FileBuffer);
-                return Task.FromResult(WriteLength);
-            }, WriteFromLength).Result;
+            var BaseInfo = Info.BaseInfo;
+            var Directory = BaseInfo.Directory;
+            if (!Directory.Exists)
+                Directory.Create();
+
+            using var FileBuffer = Info.BaseInfo.OpenWrite();
+            FileBuffer.Seek(WriteFromLength, SeekOrigin.Begin);
+            var WriteLength = WriterFunc(FileBuffer);
             return this;
         }
         public async Task<FilerWriter> OpenWriteAsync(Func<FileStream, Task<long>> WriterFunc, long WriteFromLength = 0)
@@ -60,8 +63,11 @@ namespace Rugal.LocalFiler.Service
             if (!Directory.Exists)
                 Directory.Create();
 
+            var IsExist = BaseInfo.Exists;
             using var FileBuffer = Info.BaseInfo.OpenWrite();
-            FileBuffer.Seek(WriteFromLength, SeekOrigin.Begin);
+
+            if (IsExist && WriteFromLength > 0)
+                FileBuffer.Seek(WriteFromLength, SeekOrigin.Begin);
             var WriteLength = await WriterFunc(FileBuffer);
             return this;
         }

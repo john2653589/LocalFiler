@@ -50,21 +50,20 @@ namespace Rugal.LocalFiler.Model
 
         #region Public Property
         public ReadConfig Config { get; set; }
-        public FileInfo BaseInfo { get; set; }
+        public FileInfo BaseInfo => GetBaseInfo();
         public FolderInfo Folder => _Folder.Value;
         public string FileName => BaseInfo.Name;
         public string Extension => BaseInfo.Extension;
         public bool IsExist => BaseInfo.Exists;
         public long Length => IsExist ? BaseInfo.Length : -1;
+        public bool IsVerifyFileName { get; set; }
         #endregion
 
         #region Constructor
-        public FilerInfo(FilerService _Filer, ReadConfig _Config, bool IsVerifyFileName) : base(_Filer)
+        public FilerInfo(FilerService _Filer, ReadConfig _Config, bool _IsVerifyFileName) : base(_Filer)
         {
             Config = _Config;
-
-            var FullFileName = Filer.CombineRootFileName(Config, IsVerifyFileName);
-            BaseInfo = new FileInfo(FullFileName);
+            IsVerifyFileName = _IsVerifyFileName;
             _Folder = new Lazy<FolderInfo>(() => GetFolder());
         }
         public FilerInfo(FilerService _Filer, ReadConfig _Config) : this(_Filer, _Config, false) { }
@@ -202,6 +201,12 @@ namespace Rugal.LocalFiler.Model
 
             var Result = Files[Index];
             return Result;
+        }
+        private FileInfo GetBaseInfo()
+        {
+            var FullFileName = Filer.CombineRootFileName(Config, IsVerifyFileName);
+            var InfoResult = new FileInfo(FullFileName);
+            return InfoResult;
         }
         #endregion
     }

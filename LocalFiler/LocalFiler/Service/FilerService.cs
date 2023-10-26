@@ -308,6 +308,7 @@ namespace Rugal.LocalFiler.Service
         {
             var NewInfo = ReNameInfo(File, NewFileName);
             var NewFullFileName = CombineRootFileName(NewFileName, File.Config.Paths);
+            File.BaseInfo = 
             File.BaseInfo.MoveTo(NewFullFileName, true);
             File.Folder.ReQueryFile();
             return NewInfo;
