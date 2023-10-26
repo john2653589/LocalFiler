@@ -6,6 +6,7 @@
         public bool UseExtension { get; set; }
         public string TempExtention { get; set; }
         public string SaveFileNameReplace { get; set; }
+        public int ReadPerKb { get; set; }
         public FileNameCaseType FileNameCase { get; set; } = FileNameCaseType.None;
         public string FormatRootPath { get; private set; }
         public string RootPath

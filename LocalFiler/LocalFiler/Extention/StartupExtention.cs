@@ -46,12 +46,13 @@ namespace Rugal.LocalFiler.Extention
             var GetSetting = Configuration.GetSection("LocalFiler");
             _ = bool.TryParse(GetSetting["DefaultExtensionFromFile"], out var DefaultExtensionFromFile);
             _ = bool.TryParse(GetSetting["UseExtension"], out var UseExtension);
-
+            _ = int.TryParse(GetSetting["ReadPerKb"], out var ReadPerKb);
             var Setting = new FilerSetting()
             {
                 RootPath = GetSetting["RootPath"],
                 SaveFileNameReplace = GetSetting["SaveFileNameReplace"],
                 TempExtention = GetSetting["TempExtention"] ?? "tmp",
+                ReadPerKb = ReadPerKb == 0 ? 1024 : ReadPerKb,
                 DefaultExtensionFromFile = DefaultExtensionFromFile,
                 UseExtension = UseExtension,
             };

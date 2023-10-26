@@ -237,6 +237,7 @@ namespace Rugal.LocalFiler.Model
         public IEnumerable<FolderInfo> Folders => _Folders.Value;
         public long TotalLength => _TotalLength.Value;
         public FolderModeType FolderMode { get; set; } = FolderModeType.Static;
+        public string IgnoreTempExtension { get; set; }
         #endregion
 
         #region Constructor
@@ -322,6 +323,13 @@ namespace Rugal.LocalFiler.Model
         #endregion
 
         #region With Method
+        public FolderInfo WithSet(FolderInfo Source)
+        {
+            WithMode(Source.FolderMode);
+            WithSort(Source.SortBy);
+            WithIgnoreTemp(Source.IgnoreTempExtension);
+            return this;
+        }
         public FolderInfo WithMode(FolderModeType _FolderMode)
         {
             FolderMode = _FolderMode;
@@ -338,6 +346,12 @@ namespace Rugal.LocalFiler.Model
         public FolderInfo WithParentFolder(FolderInfo _UpperSetParentFolder)
         {
             UpperSetParentFolder = _UpperSetParentFolder;
+            return this;
+        }
+        public FolderInfo WithIgnoreTemp(string TempExtension = null)
+        {
+            TempExtension = Filer.ConvertExtension(TempExtension);
+            IgnoreTempExtension = TempExtension;
             return this;
         }
         #endregion
@@ -384,6 +398,9 @@ namespace Rugal.LocalFiler.Model
                         return GetInfo;
                     });
 
+                if (!string.IsNullOrWhiteSpace(IgnoreTempExtension))
+                    Files = Files.Where(Item => !Item.IsTemp(IgnoreTempExtension));
+
                 Files = SortFiles(Files, SortBy);
                 if (FolderMode == FolderModeType.Static)
                 {
@@ -415,7 +432,7 @@ namespace Rugal.LocalFiler.Model
                             .AddPath(FolderInfo.Name);
 
                         var GetInfo = new FolderInfo(Filer, FolderConfig)
-                            .WithSort(SortBy)
+                            .WithSet(this)
                             .WithParentFolder(this);
                         return GetInfo;
                     });

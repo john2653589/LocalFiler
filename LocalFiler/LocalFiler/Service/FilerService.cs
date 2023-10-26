@@ -259,6 +259,7 @@ namespace Rugal.LocalFiler.Service
         public virtual FilerInfo ReNameInfo(FilerInfo File, string NewFileName)
         {
             var NewConfig = File.Config
+                .Clone()
                 .WithFileName(NewFileName);
 
             var NewInfo = new FilerInfo(this, NewConfig)
@@ -277,9 +278,8 @@ namespace Rugal.LocalFiler.Service
                 .AddPath(NewFolderName);
 
             var NewFolder = new FolderInfo(this, NewConfig)
-                .WithParentFolder(Folder.ParentFolder)
-                .WithMode(Folder.FolderMode)
-                .WithSort(Folder.SortBy);
+                .WithSet(Folder)
+                .WithParentFolder(Folder.ParentFolder);
 
             return NewFolder;
         }
@@ -308,7 +308,6 @@ namespace Rugal.LocalFiler.Service
         {
             var NewInfo = ReNameInfo(File, NewFileName);
             var NewFullFileName = CombineRootFileName(NewFileName, File.Config.Paths);
-            File.BaseInfo = 
             File.BaseInfo.MoveTo(NewFullFileName, true);
             File.Folder.ReQueryFile();
             return NewInfo;

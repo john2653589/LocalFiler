@@ -1,16 +1,21 @@
 ﻿using Rugal.LocalFiler.Model;
+using System;
 
 namespace Rugal.LocalFiler.Service
 {
     public class FilerWriter
     {
         public readonly FilerInfo Info;
+        private FilerService Filer => Info.Filer;
         public FilerWriter(FilerInfo _Info)
         {
             Info = _Info;
         }
-        public FilerWriter OpenRead(Func<byte[], bool> ReadFunc, long ReadFromLength = 0, long KbPerRead = 1024)
+        public FilerWriter OpenRead(Func<byte[], bool> ReadFunc, long ReadFromLength = 0, long KbPerRead = 0)
         {
+            if (KbPerRead == 0)
+                KbPerRead = Filer.Setting.ReadPerKb;
+
             _ = OpenReadAsync(Buffer =>
             {
                 var IsNext = ReadFunc(Buffer);
@@ -18,8 +23,11 @@ namespace Rugal.LocalFiler.Service
             }, ReadFromLength, KbPerRead).Result;
             return this;
         }
-        public async Task<FilerWriter> OpenReadAsync(Func<byte[], Task<bool>> ReadFunc, long ReadFromLength = 0, long KbPerRead = 1024)
+        public async Task<FilerWriter> OpenReadAsync(Func<byte[], Task<bool>> ReadFunc, long ReadFromLength = 0, long KbPerRead = 0)
         {
+            if (KbPerRead == 0)
+                KbPerRead = Filer.Setting.ReadPerKb;
+
             if (!Info.BaseInfo.Exists)
                 return this;
 

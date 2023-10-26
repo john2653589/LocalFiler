@@ -8,6 +8,8 @@ var Filer = new FilerService(new FilerSetting()
     RootPath = "D:/"
 });
 
+var A = @"D:\TestImage\AAUftGI.jpg";
+
 var RootFolder = Filer.InfoFolder();
 _ = RootFolder.TotalLength;
 
