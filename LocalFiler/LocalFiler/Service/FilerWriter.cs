@@ -13,17 +13,32 @@ namespace Rugal.LocalFiler.Service
         }
         public FilerWriter OpenRead(Func<byte[], bool> ReadFunc, long ReadFromLength = 0, long KbPerRead = 0)
         {
-            if (KbPerRead == 0)
-                KbPerRead = Filer.Setting.ReadPerKb;
-
-            _ = OpenReadAsync(Buffer =>
+            var Result = OpenReadAsync(Buffer =>
             {
                 var IsNext = ReadFunc(Buffer);
                 return Task.FromResult(IsNext);
             }, ReadFromLength, KbPerRead).Result;
             return this;
         }
+        public FilerWriter OpenRead(Func<byte[], ReadBufferInfo, bool> ReadFunc, long ReadFromLength = 0, long KbPerRead = 0)
+        {
+            var Result = OpenReadAsync((Buffer, Info) =>
+            {
+                var IsNext = ReadFunc(Buffer, Info);
+                return Task.FromResult(IsNext);
+            }, ReadFromLength, KbPerRead).Result;
+            return this;
+        }
         public async Task<FilerWriter> OpenReadAsync(Func<byte[], Task<bool>> ReadFunc, long ReadFromLength = 0, long KbPerRead = 0)
+        {
+            var Result = await OpenReadAsync((Buffer, Info) =>
+            {
+                var IsNext = ReadFunc(Buffer);
+                return IsNext;
+            }, ReadFromLength, KbPerRead);
+            return this;
+        }
+        public async Task<FilerWriter> OpenReadAsync(Func<byte[], ReadBufferInfo, Task<bool>> ReadFunc, long ReadFromLength = 0, long KbPerRead = 0)
         {
             if (KbPerRead == 0)
                 KbPerRead = Filer.Setting.ReadPerKb;
@@ -31,25 +46,43 @@ namespace Rugal.LocalFiler.Service
             if (!Info.BaseInfo.Exists)
                 return this;
 
-            using var FileBuffer = Info.BaseInfo.OpenRead();
-            FileBuffer.Seek(ReadFromLength, SeekOrigin.Begin);
-
-            var ReadByteLength = KbPerRead * 1024;
-            while (FileBuffer.Position < FileBuffer.Length)
+            try
             {
-                if (FileBuffer.Position + ReadByteLength > FileBuffer.Length)
-                    ReadByteLength = FileBuffer.Length - FileBuffer.Position;
+                using var FileBuffer = Info.BaseInfo.OpenRead();
+                FileBuffer.Seek(ReadFromLength, SeekOrigin.Begin);
 
-                var ReadBuffer = new byte[ReadByteLength];
-                var ReadCount = FileBuffer.Read(ReadBuffer);
+                var ReadByteLength = KbPerRead * 1024;
+                while (FileBuffer.Position < FileBuffer.Length)
+                {
+                    var StartPosition = FileBuffer.Position;
+                    if (FileBuffer.Position + ReadByteLength > FileBuffer.Length)
+                        ReadByteLength = FileBuffer.Length - FileBuffer.Position;
 
-                if (ReadCount == 0)
-                    break;
+                    var ReadBuffer = new byte[ReadByteLength];
+                    var ReadCount = FileBuffer.Read(ReadBuffer);
 
-                var IsNext = await ReadFunc.Invoke(ReadBuffer);
-                if (!IsNext)
-                    break;
+                    var EndPosition = FileBuffer.Position;
+
+                    if (ReadCount == 0)
+                        break;
+
+                    var IsNext = await ReadFunc.Invoke(ReadBuffer, new ReadBufferInfo()
+                    {
+                        StartPosition = StartPosition,
+                        EndPosition = EndPosition,
+                    });
+                    if (!IsNext)
+                        break;
+                }
             }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("OpenRead Error:\n");
+                Console.WriteLine(ex.ToString());
+                Console.ResetColor();
+            }
+
             return this;
         }
         public FilerWriter OpenWrite(Func<FileStream, long> WriterFunc, long WriteFromLength = 0)
